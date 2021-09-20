@@ -10,7 +10,6 @@ int main(int argc, const char *argv[]){
 	char *buffer;
 	char *serv_addr;
 	int serv_port;
-	int byteWrite;
 
 	printf("Client active.\n");
 
@@ -35,9 +34,7 @@ int main(int argc, const char *argv[]){
 	addr.sin_port = htons(serv_port);
 	addr.sin_addr.s_addr = inet_addr(serv_addr);
 
-	#ifdef PRINT_DEBUG
 	printf("Client trying to connect to %s:%d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
-	#endif
 
 	if(connect(sockfd, (struct sockaddr *)&addr, sizeof(addr)) < 0){
 		perror("Error in client on connect");
@@ -53,23 +50,8 @@ int main(int argc, const char *argv[]){
 				fflush(stdin);
 			} while (buffer == NULL);
 
-			#ifdef PRINT_DEBUG
-			printf("String Inserted %s.\n", buffer);
-			#endif
-
-			byteWrite = strlen(buffer);
-
-			send(sockfd, &byteWrite, sizeof(int), 0);
-
-			#ifdef PRINT_DEBUG
-			printf("byteWrite=%d\n", byteWrite);
-			#endif
-
-			send(sockfd, buffer, byteWrite, 0);
-
-			#ifdef PRINT_DEBUG
-			printf("buffer=%s\n", buffer);
-			#endif
+			if(send_message_to(sockfd, OP_MSG, buffer) < 0)
+				exit(EXIT_FAILURE);
 
 			free(buffer);
 		}
