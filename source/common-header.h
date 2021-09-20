@@ -15,4 +15,3 @@
 #define fflush(stdin) while(getchar() != '\n');
 
 #define SERV_PORT 6990
-#define BUFFER_SIZE 1024
