@@ -1,3 +1,0 @@
-Message:
-	[0]		: 	1 byte for operation type as char
-	[1-4]	:	4 byte for message length as unsigned int
