@@ -10,7 +10,6 @@ int main(int argc, const char *argv[]){
 	char *buffer;
 	char *serv_addr;
 	int serv_port;
-	int byteWrite;
 
 	printf("Client active.\n");
 
@@ -53,23 +52,9 @@ int main(int argc, const char *argv[]){
 				fflush(stdin);
 			} while (buffer == NULL);
 
-			#ifdef PRINT_DEBUG
-			printf("String Inserted %s.\n", buffer);
-			#endif
-
-			byteWrite = strlen(buffer);
-
-			send(sockfd, &byteWrite, sizeof(int), 0);
-
-			#ifdef PRINT_DEBUG
-			printf("byteWrite=%d\n", byteWrite);
-			#endif
-
-			send(sockfd, buffer, byteWrite, 0);
-
-			#ifdef PRINT_DEBUG
-			printf("buffer=%s\n", buffer);
-			#endif
+			if(send_message_to(sockfd, "m", buffer) < 0){
+				exit(EXIT_FAILURE);
+			}
 
 			free(buffer);
 		}
