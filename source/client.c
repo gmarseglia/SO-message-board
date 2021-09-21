@@ -4,6 +4,7 @@
 void sigint_handler(int signum);
 
 int sockfd;
+struct user_info user_info;
 
 int main(int argc, const char *argv[]){
 	char *buffer;
@@ -12,18 +13,14 @@ int main(int argc, const char *argv[]){
 
 	printf("Client active.\n");
 
-	sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	if(sockfd < 0){
-		perror("Error in client on socket attempt.\n");
-		exit(EXIT_FAILURE);
-	}
-
 	struct sockaddr_in addr;
 
+	// DEBUG_SERVER 127.0.0.1:6990
 	#ifdef DEBUG_SERVER
 	ip_address = "127.0.0.1";
 	port = argc == 1 ? INITIAL_SERV_PORT : strtol(argv[1], NULL, 10);
 	
+	// Intended use
 	#else
 	if(argc != 3){
 		fprintf(stderr, "Incorrect number of arguments.\nCorrect usage is xclient ip_address port_number\n");
@@ -35,35 +32,40 @@ int main(int argc, const char *argv[]){
 	
 	#endif
 
+	// Setup the struct for server address
 	sockaddr_in_setup(&addr, ip_address, port);
 
 	printf("Server address is %s:%d\n",
 		inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 
-	if(connect(sockfd, (struct sockaddr *)&addr, sizeof(addr)) < 0){
-		perror("Error in client on connect");
-		exit(EXIT_FAILURE);
-	}
+	// Client needs to register or login before being able to send message
+	login_registration(&sockfd, &addr, &user_info);
 
-	printf("Connected.\n");
-
+	// Main cycle
+	//	gets interrupted by SIGINT or errors
 	while(1){
+			// Scanf an entire line with memory modifier m, continue only if characters were typed
 			printf("Insert message:\n");
 			do {
 				scanf("%m[^\n]", &buffer);
 				fflush(stdin);
 			} while (buffer == NULL);
 
-			if(send_message_to(sockfd, 0, "m", buffer) < 0){
+			// Send message to server
+			if(send_message_to(sockfd, user_info.uid, OP_MESSAGE, buffer) < 0){
 				exit(EXIT_FAILURE);
 			}
 
+			// Free the buffer allocated by scanf
 			free(buffer);
 		}
 
 	return 0;
 }
 
+/*
+*	Close the socket
+*/
 void sigint_handler(int signum){
 	if(close(sockfd) < 0 && errno != EBADF) perror("Error in client on close.\n");
 	printf("Client has interrupted connection.\n");

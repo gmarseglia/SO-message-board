@@ -18,14 +18,33 @@
 #define SIZEOF_CHAR 1
 #define SIZEOF_INT 4
 
+// OP codes
+#define OP_MESSAGE "m"
 #define OP_SEND_REG_USERNAME "u"
 #define OP_SEND_REG_PASSWD "p"
+#define OP_SEND_REG_UID "i"
+#define OP_NOT_ACCEPTED "n"
 
+/*
+	DESCRIPTION:
+		Send two message:
+		1. Pre-message:
+			4 byte of int uid, User ID
+			1 byte of char op, OPeration code
+			4 byte of int message_len, LENgth of the MESSAGE
+
+		2. Actual message:
+
+	RETURNS:
+		In case of success: the number of byte written
+		In case of error: -1, and print errno
+*/
 int send_message_to(int sockfd, int uid, char *op, char *message){
 	int message_len, byte_written;
-	struct iovec iov[3];
-
 	message_len = strlen(message);
+
+	// iovec used by writev
+	struct iovec iov[3];
 
 	iov[0].iov_base = &uid;
 	iov[0].iov_len = SIZEOF_INT;
@@ -36,6 +55,8 @@ int send_message_to(int sockfd, int uid, char *op, char *message){
 	iov[2].iov_base = &message_len;
 	iov[2].iov_len = SIZEOF_INT;
 
+	// Send pre-message:
+	//	writev enables to send different arrays as one
 	if((byte_written = writev(sockfd, iov, 3)) < 0){
 		perror("Error in send_message_to on writev");
 		return -1;
@@ -45,6 +66,7 @@ int send_message_to(int sockfd, int uid, char *op, char *message){
 	printf("writev has written %d bytes\n", byte_written);
 	#endif
 
+	// Send message
 	if((byte_written = write(sockfd, message, message_len)) 
 		!= message_len){
 		perror("Error in send_message_to on write");
@@ -58,6 +80,16 @@ int send_message_to(int sockfd, int uid, char *op, char *message){
 	return byte_written;
 }
 
+/*
+	DESCRIPTION:
+		Receive from sockfd, both pre-message and message
+		Allocates space for message in container
+
+	RETURNS:
+		In case of success: the number of byte read
+		In case of closed socket: 0
+		In case of error: -1, and print errno
+*/
 int receive_message_from(int sockfd, int *uid, char *op, char **container){
 	int message_len;
 	int null_uid;
@@ -100,18 +132,22 @@ int receive_message_from(int sockfd, int *uid, char *op, char **container){
 	return byte_read;
 }
 
-void sockaddr_in_setup(struct sockaddr_in *addr, const char *ip_address, int port){
-	memset(addr, 0, sizeof(struct sockaddr_in));
-	addr->sin_family = AF_INET;
-	addr->sin_port = htons(port);
-	addr->sin_addr.s_addr = inet_addr(ip_address);
-	return;
-}
-
+/*
+	DESCRIPTION:
+		Initialize struct sockaddr_in
+*/
 void sockaddr_in_setup_inaddr(struct sockaddr_in *addr, unsigned int ip_address, int port){
 	memset(addr, 0, sizeof(struct sockaddr_in));
 	addr->sin_family = AF_INET;
 	addr->sin_port = htons(port);
 	addr->sin_addr.s_addr = ip_address;
 	return;
+}
+
+/*
+	DESCRIPTION:
+		Initialize struct sockaddr_in using string as ip address
+*/
+void sockaddr_in_setup(struct sockaddr_in *addr, const char *ip_address, int port){
+	return sockaddr_in_setup_inaddr(addr, inet_addr(ip_address), port);
 }
