@@ -1,4 +1,5 @@
 #include "common-header.h"
+#include "registration.h"
 
 void sigint_handler(int signum);
 
@@ -53,7 +54,7 @@ int main(int argc, const char *argv[]){
 				fflush(stdin);
 			} while (buffer == NULL);
 
-			if(send_message_to(sockfd, "m", buffer) < 0){
+			if(send_message_to(sockfd, 0, "m", buffer) < 0){
 				exit(EXIT_FAILURE);
 			}
 

@@ -18,19 +18,25 @@
 #define SIZEOF_CHAR 1
 #define SIZEOF_INT 4
 
-int send_message_to(int sockfd, char *op, char *message){
+#define OP_SEND_REG_USERNAME "u"
+#define OP_SEND_REG_PASSWD "p"
+
+int send_message_to(int sockfd, int uid, char *op, char *message){
 	int message_len, byte_written;
-	struct iovec iov[2];
+	struct iovec iov[3];
 
 	message_len = strlen(message);
 
-	iov[0].iov_base = op;
-	iov[0].iov_len = SIZEOF_CHAR;
+	iov[0].iov_base = &uid;
+	iov[0].iov_len = SIZEOF_INT;
 
-	iov[1].iov_base = &message_len;
-	iov[1].iov_len = SIZEOF_INT;
+	iov[1].iov_base = op;
+	iov[1].iov_len = SIZEOF_CHAR;
 
-	if((byte_written = writev(sockfd, iov, 2)) < 0){
+	iov[2].iov_base = &message_len;
+	iov[2].iov_len = SIZEOF_INT;
+
+	if((byte_written = writev(sockfd, iov, 3)) < 0){
 		perror("Error in send_message_to on writev");
 		return -1;
 	}
@@ -52,19 +58,23 @@ int send_message_to(int sockfd, char *op, char *message){
 	return byte_written;
 }
 
-int receive_message_from(int sockfd, char *op, char **container){
+int receive_message_from(int sockfd, int *uid, char *op, char **container){
 	int message_len;
+	int null_uid;
 	int byte_read = 0;
 
-	struct iovec iov[2];
+	struct iovec iov[3];
 
-	iov[0].iov_base = op;
-	iov[0].iov_len = SIZEOF_CHAR;
+	iov[0].iov_base = uid == NULL ? &null_uid : uid;
+	iov[0].iov_len = SIZEOF_INT;
 
-	iov[1].iov_base = &message_len;
-	iov[1].iov_len = SIZEOF_INT;
+	iov[1].iov_base = op;
+	iov[1].iov_len = SIZEOF_CHAR;
 
-	if((byte_read = readv(sockfd, iov, 2)) <= 0){
+	iov[2].iov_base = &message_len;
+	iov[2].iov_len = SIZEOF_INT;
+
+	if((byte_read = readv(sockfd, iov, 3)) <= 0){
 		if(byte_read < 0) perror("Error in receive_message_from on readv");
 		return byte_read;
 	}

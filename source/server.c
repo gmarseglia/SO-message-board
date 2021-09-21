@@ -103,13 +103,14 @@ void *thread_communication_routine(void *arg){
 	free(arg);
 
 	char *container, op;
+	int uid;
 
 	printf("Thread[%d] accepted connection from %s:%d\n", id, str_client_addr, i_client_port);
 
-	while(receive_message_from(acceptfd, &op, &container) > 0){
+	while(receive_message_from(acceptfd, &uid, &op, &container) > 0){
 
-		printf("Thread[%d] received %c op from %s:%d:\n%s\n",
-			id, op, str_client_addr, i_client_port, container);
+		printf("Thread[%d] received %c op from %d@%s:%d:\n%s\n",
+			id, op, uid, str_client_addr, i_client_port, container);
 
 		free(container);
 	}

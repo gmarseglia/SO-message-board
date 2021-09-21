@@ -1,5 +1,6 @@
 ser='server'
 cli='client'
+regh='registration'
 cmnh='common-header'
 
 all:
@@ -18,10 +19,10 @@ fine:
 	gcc $(cli).c -o x$(cli) -g -pthread -Werror=all -DPRINT_DEBUG -DPRINT_DEBUG_FINE -DDEBUG_SERVER
 
 setup:
-	touch $(ser).c $(cli).c $(cmnh).h
+	touch $(ser).c $(cli).c $(cmnh).h $(regh).h
 
 clear:
 	rm -f x$(ser) x$(cli)
 
 subl:
-	subl Makefile $(ser).c $(cli).c $(cmnh).h
+	subl Makefile $(ser).c $(cli).c $(cmnh).h $(regh).h
