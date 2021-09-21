@@ -16,7 +16,7 @@ int sockfd, acceptfd;
 int main(int argc, char const *argv[])
 {
 	pthread_t tids[MAX_BACKLOG];
-	int serv_port = INITAL_SERV_PORT;
+	int serv_port = INITIAL_SERV_PORT;
 	int tCount = 0;
 
 	printf("Server active.\n");

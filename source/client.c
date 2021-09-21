@@ -19,25 +19,20 @@ int main(int argc, const char *argv[]){
 
 	struct sockaddr_in addr;
 
-	switch(argc){
-		case 1:
-			ip_address = "127.0.0.1";
-			port = INITAL_SERV_PORT;
-			break;
-		case 2:
-			ip_address = "127.0.0.1";
-			port = strtol(argv[1], NULL, 10);
-			break;
-		case 3:
-			// strcpy(ip_address, argv[1]);
-			ip_address = argv[1];
-			port = strtol(argv[2], NULL, 10);
-			break;
-		default:
-			fprintf(stderr, "Incorrect number of arguments.\n");
-			exit(EXIT_FAILURE);
-			break;
+	#ifdef DEBUG_SERVER
+	ip_address = "127.0.0.1";
+	port = argc == 1 ? INITIAL_SERV_PORT : strtol(argv[1], NULL, 10);
+	
+	#else
+	if(argc != 3){
+		fprintf(stderr, "Incorrect number of arguments.\nCorrect usage is xclient ip_address port_number\n");
+		exit(EXIT_FAILURE);
 	}
+
+	ip_address = argv[1];
+	port = strtol(argv[2], NULL, 10);
+	
+	#endif
 
 	sockaddr_in_setup(&addr, ip_address, port);
 

@@ -9,13 +9,12 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
-// Implicit declaration solved: https://stackoverflow.com/questions/11049687/something-about-inet-ntoa
 #include <arpa/inet.h>
 #include <sys/uio.h>
 
 #define fflush(stdin) while(getchar() != '\n');
 
-#define INITAL_SERV_PORT 6990
+#define INITIAL_SERV_PORT 6990
 #define SIZEOF_CHAR 1
 #define SIZEOF_INT 4
 
