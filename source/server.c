@@ -113,7 +113,8 @@ void *thread_communication_routine(void *arg){
 
 	while(receive_message_from(acceptfd, &op, &container) > 0){
 
-		printf("Thread[%d] from %s:%d:\n%s\n", id, str_client_addr, i_client_port, container);
+		printf("Thread[%d] received %c op from %s:%d:\n%s\n",
+			id, op, str_client_addr, i_client_port, container);
 
 		free(container);
 	}

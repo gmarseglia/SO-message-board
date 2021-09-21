@@ -26,8 +26,7 @@ int send_message_to(int sockfd, char *op, char *message){
 	message_len = strlen(message);
 
 	iov[0].iov_base = op;
-	// iov[0].iov_len = SIZEOF_CHAR;
-	iov[0].iov_len = 0;
+	iov[0].iov_len = SIZEOF_CHAR;
 
 	iov[1].iov_base = &message_len;
 	iov[1].iov_len = SIZEOF_INT;
@@ -61,7 +60,7 @@ int receive_message_from(int sockfd, char *op, char **container){
 	struct iovec iov[2];
 
 	iov[0].iov_base = op;
-	iov[0].iov_len = 0;
+	iov[0].iov_len = SIZEOF_CHAR;
 
 	iov[1].iov_base = &message_len;
 	iov[1].iov_len = SIZEOF_INT;
