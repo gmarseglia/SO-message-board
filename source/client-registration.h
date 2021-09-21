@@ -26,7 +26,7 @@ void login_registration(int sockfd, struct sockaddr_in *server_address, struct u
 		if(connect(sockfd, (struct sockaddr *)server_address, sizeof(struct sockaddr)) < 0){
 			perror("Error in client on connect");
 			exit(EXIT_FAILURE);
-			}
+		}
 
 		printf("Connected.\n");
 

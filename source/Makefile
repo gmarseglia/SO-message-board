@@ -1,6 +1,6 @@
 ser='server'
 cli='client'
-regh='registration'
+cli-regh='client-registration'
 cmnh='common-header'
 
 all:
@@ -19,7 +19,7 @@ fine:
 	gcc $(cli).c -o x$(cli) -g -pthread -Werror=all -DPRINT_DEBUG -DPRINT_DEBUG_FINE -DDEBUG_SERVER
 
 setup:
-	touch $(ser).c $(cli).c $(cmnh).h $(regh).h
+	touch $(ser).c $(cli).c $(cmnh).h $(cli-regh).h
 
 clear:
 	rm -f x$(ser) x$(cli)

@@ -1,5 +1,5 @@
 #include "common-header.h"
-#include "registration.h"
+#include "client-registration.h"
 
 void sigint_handler(int signum);
 
