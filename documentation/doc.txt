@@ -1,2 +1,7 @@
 Suggestion on writev():
 	https://baus.net/on-tcp_cork/
+
+Implicit declaration of inet_ntoa solution:
+	https://stackoverflow.com/questions/11049687/something-about-inet-ntoa
+
+
