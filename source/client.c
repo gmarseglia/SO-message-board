@@ -1,27 +1,15 @@
 #include "common-header.h"
 
-// #define PRINT_DEBUG
-
 void sigint_handler(int signum);
 
 int sockfd;
 
 int main(int argc, const char *argv[]){
 	char *buffer;
-	char *serv_addr;
-	int serv_port;
+	const char *ip_address;
+	int port;
 
 	printf("Client active.\n");
-
-	serv_addr = "127.0.0.1";
-	serv_port = SERV_PORT; 
-	if(argc > 1){
-		serv_port = strtol(argv[1], NULL, 10);
-	}
-	if(argc > 2) {
-		serv_addr = malloc(sizeof(argv[2]));
-		strcpy(serv_addr, argv[2]);
-	}
 
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
 	if(sockfd < 0){
@@ -30,23 +18,41 @@ int main(int argc, const char *argv[]){
 	}
 
 	struct sockaddr_in addr;
-	addr.sin_family = AF_INET;
-	addr.sin_port = htons(serv_port);
-	addr.sin_addr.s_addr = inet_addr(serv_addr);
 
-	#ifdef PRINT_DEBUG
-	printf("Client trying to connect to %s:%d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
-	#endif
+	switch(argc){
+		case 1:
+			ip_address = "127.0.0.1";
+			port = INITAL_SERV_PORT;
+			break;
+		case 2:
+			ip_address = "127.0.0.1";
+			port = strtol(argv[1], NULL, 10);
+			break;
+		case 3:
+			// strcpy(ip_address, argv[1]);
+			ip_address = argv[1];
+			port = strtol(argv[2], NULL, 10);
+			break;
+		default:
+			fprintf(stderr, "Incorrect number of arguments.\n");
+			exit(EXIT_FAILURE);
+			break;
+	}
+
+	sockaddr_in_setup(&addr, ip_address, port);
+
+	printf("Server address is %s:%d\n",
+		inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 
 	if(connect(sockfd, (struct sockaddr *)&addr, sizeof(addr)) < 0){
 		perror("Error in client on connect");
 		exit(EXIT_FAILURE);
 	}
 
-	printf("Connections to %s:%d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
+	printf("Connected.\n");
 
 	while(1){
-			printf("Insert string:\n");
+			printf("Insert message:\n");
 			do {
 				scanf("%m[^\n]", &buffer);
 				fflush(stdin);
@@ -58,8 +64,6 @@ int main(int argc, const char *argv[]){
 
 			free(buffer);
 		}
-
-	
 
 	return 0;
 }

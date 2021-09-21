@@ -15,7 +15,7 @@
 
 #define fflush(stdin) while(getchar() != '\n');
 
-#define SERV_PORT 6990
+#define INITAL_SERV_PORT 6990
 #define SIZEOF_CHAR 1
 #define SIZEOF_INT 4
 
@@ -89,4 +89,20 @@ int receive_message_from(int sockfd, char *op, char **container){
 	#endif
 
 	return byte_read;
+}
+
+void sockaddr_in_setup(struct sockaddr_in *addr, const char *ip_address, int port){
+	memset(addr, 0, sizeof(struct sockaddr_in));
+	addr->sin_family = AF_INET;
+	addr->sin_port = htons(port);
+	addr->sin_addr.s_addr = inet_addr(ip_address);
+	return;
+}
+
+void sockaddr_in_setup_inaddr(struct sockaddr_in *addr, unsigned int ip_address, int port){
+	memset(addr, 0, sizeof(struct sockaddr_in));
+	addr->sin_family = AF_INET;
+	addr->sin_port = htons(port);
+	addr->sin_addr.s_addr = ip_address;
+	return;
 }

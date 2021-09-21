@@ -1,7 +1,5 @@
 #include "common-header.h"
 
-// #define PRINT_DEBUG
-
 #define MAX_BACKLOG 1024
 
 void sigint_handler(int signum);
@@ -14,11 +12,11 @@ struct thread_arg{
 };
 
 int sockfd, acceptfd;
-int serv_port = SERV_PORT;
 
 int main(int argc, char const *argv[])
 {
 	pthread_t tids[MAX_BACKLOG];
+	int serv_port = INITAL_SERV_PORT;
 	int tCount = 0;
 
 	printf("Server active.\n");
@@ -30,10 +28,7 @@ int main(int argc, char const *argv[])
 	}
 
 	struct sockaddr_in addr;
-	memset(&addr, 0, sizeof(struct sockaddr_in));
-	addr.sin_family = AF_INET;
-	addr.sin_port = htons(serv_port);												// Uso come porta SERV_PORT in common-header.h = 6990
-	addr.sin_addr.s_addr = INADDR_ANY;												// Accetto connessioni da tutti 
+	sockaddr_in_setup_inaddr(&addr, INADDR_ANY, serv_port);
 
 	#ifdef PRINT_DEBUG
 	printf("Server trying to bound on %s:%d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
