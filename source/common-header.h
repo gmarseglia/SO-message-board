@@ -53,3 +53,41 @@ int send_message_to(int sockfd, char *op, char *message){
 
 	return byte_written;
 }
+
+int receive_message_from(int sockfd, char *op, char **container){
+	int message_len;
+	int byte_read = 0;
+
+	struct iovec iov[2];
+
+	iov[0].iov_base = op;
+	iov[0].iov_len = 0;
+
+	iov[1].iov_base = &message_len;
+	iov[1].iov_len = SIZEOF_INT;
+
+	if((byte_read = readv(sockfd, iov, 2)) <= 0){
+		if(byte_read < 0) perror("Error in receive_message_from on readv");
+		return byte_read;
+	}
+
+	#ifdef PRINT_DEBUG_FINE
+	printf("readv has read %d bytes, message_len=%d\n",
+		byte_read, message_len);
+	#endif
+
+	*container = calloc(sizeof(char), message_len + 1);
+	memset(*container, '\0', message_len + 1);
+
+	if((byte_read = read(sockfd, *container, message_len)) <= 0){
+		if(byte_read < 0) perror("Error in receive_message_from on readv");
+		return byte_read;
+	}
+
+	#ifdef PRINT_DEBUG_FINE
+	printf("read has read %d bytes, message=%s\n",
+		byte_read, *container);
+	#endif
+
+	return byte_read;
+}

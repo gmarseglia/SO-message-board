@@ -107,33 +107,15 @@ void *thread_communication_routine(void *arg){
 	free(client_addr);
 	free(arg);
 
-	char *buffer;
-	int byteRead, byteWrite;
+	char *container, op;
 
 	printf("Thread[%d] accepted connection from %s:%d\n", id, str_client_addr, i_client_port);
 
-	while(1){
+	while(receive_message_from(acceptfd, &op, &container) > 0){
 
-		byteWrite = 0;
-		byteRead = recv(acceptfd, &byteWrite, sizeof(int), 0);
+		printf("Thread[%d] from %s:%d:\n%s\n", id, str_client_addr, i_client_port, container);
 
-		if(byteRead == 0) break;
-
-		#ifdef PRINT_DEBUG
-		printf("byteWrite=%d\n", byteWrite);
-		#endif
-
-		buffer = malloc(sizeof(char) * (byteWrite + 1));
-		memset(buffer, '\0', byteWrite + 1);
-
-		recv(acceptfd, buffer, byteWrite, 0);
-
-		if(byteRead == 0) break;
-
-		printf("Thread[%d] from %s:%d:\n%s\n", id, str_client_addr, i_client_port, buffer);
-
-		free(buffer);
-
+		free(container);
 	}
 
 	printf("Thread[%d] has found closed connection.\n", id);
