@@ -1,4 +1,5 @@
 #include "common-header.h"
+#include "server-registration.h"
 
 // Define the length of pending connection request
 #define MAX_BACKLOG 1024
@@ -21,11 +22,19 @@ struct thread_arg{
 // sockfd is for the socket that accept connection, acceptfd is for the socket that does the communication
 int sockfd, acceptfd;
 
-// users file and semaphores
+// Users file
 const char *users_filename = "users";
 FILE *users_file;
+
+// Semaphores Struct
+// struct semaphores{
+// 	int UR;	//Users Read
+// 	int UW;	//Users Write
+// } sems;
+
+int UW;	//Users Write 
 int UR;	//Users Read
-int UW;	//Users Write
+
 
 int main(int argc, char const *argv[])
 {

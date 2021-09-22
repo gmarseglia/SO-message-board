@@ -18,19 +18,22 @@
 #define fflush(stdin) while(getchar() != '\n');
 
 #define INITIAL_SERV_PORT 6990
+
 #define SIZEOF_CHAR 1
 #define SIZEOF_INT 4
+#define MAXSIZE_USERNAME 64
+#define MAXSIZE_PASSWD 64
 
 // OP codes
-#define OP_MESSAGE "m"
+#define OP_MESSAGE 'm'
 
-#define OP_REG_USERNAME "u"
-#define OP_REG_PASSWD "p"
-#define OP_REG_UID "i"
+#define OP_REG_USERNAME 'u'
+#define OP_REG_PASSWD 'p'
+#define OP_REG_UID 'i'
 
-#define OP_LOG_USERNAME "U"
+#define OP_LOG_USERNAME 'U'
 
-#define OP_NOT_ACCEPTED "n"
+#define OP_NOT_ACCEPTED 'n'
 
 // Struct containing the user info
 struct user_info {
@@ -53,7 +56,7 @@ struct user_info {
 		In case of success: the number of byte written
 		In case of error: -1, and print errno
 */
-int send_message_to(int sockfd, int uid, char *op, char *message){
+int send_message_to(int sockfd, int uid, char op, char *message){
 	int message_len, byte_written;
 	message_len = strlen(message);
 
@@ -63,7 +66,7 @@ int send_message_to(int sockfd, int uid, char *op, char *message){
 	iov[0].iov_base = &uid;
 	iov[0].iov_len = SIZEOF_INT;
 
-	iov[1].iov_base = op;
+	iov[1].iov_base = &op;
 	iov[1].iov_len = SIZEOF_CHAR;
 
 	iov[2].iov_base = &message_len;
