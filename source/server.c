@@ -4,11 +4,6 @@
 // Define the length of pending connection request
 #define MAX_BACKLOG 1024
 
-
-// Has to be less than SEMVMX 
-//	Maximum allowable value for semval: implementation dependent (32767).
-#define MAX_THREADS 1024
-
 void sigint_handler(int signum);
 void *thread_communication_routine(void *arg);
 
@@ -18,6 +13,10 @@ struct thread_arg{
 	int acceptfd;
 	struct sockaddr_in *client_addr;
 };
+
+// Has to be less than SEMVMX 
+//	Maximum allowable value for semval: implementation dependent (32767).
+const int MAX_THREADS = 1024;
 
 // sockfd is for the socket that accept connection, acceptfd is for the socket that does the communication
 int sockfd, acceptfd;
