@@ -102,10 +102,30 @@ void login(int sockfd, struct user_info *user_info){
 */
 void user_info_fill(struct user_info* user_info){
 	printf("Type username:\n");
-	scanf("%ms", &(user_info->username));
-	fflush(stdin);
-	printf("Type passwd:\n");
-	scanf("%ms", &(user_info->passwd));
-	fflush(stdin);
+	do{
+		scanf("%ms", &(user_info->username));
+		if(user_info->username == NULL)
+			continue;
+		if(strlen(user_info->username) > MAXSIZE_USERNAME){
+			printf("Username too long: max size is %d\n", MAXSIZE_USERNAME);
+			continue;
+		}
+		fflush(stdin);
+		break;
+	} while(1);
+
+	printf("Type password:\n");
+	do{
+		scanf("%ms", &(user_info->passwd));
+		if(user_info->passwd == NULL)
+			continue;
+		if(strlen(user_info->passwd) > MAXSIZE_PASSWD){
+			printf("Passord too long: max size is %d\n", MAXSIZE_PASSWD);
+			continue;
+		}
+		fflush(stdin);
+		break;
+	} while(1);
+	
 	return;
 }
