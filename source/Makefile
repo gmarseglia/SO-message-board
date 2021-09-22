@@ -1,7 +1,8 @@
 ser='server'
+ser-reg='server-registration'
 cli='client'
-cli-regh='client-registration'
-cmnh='common-header'
+cli-reg='client-registration'
+cmn='common-header'
 
 all:
 	@clear
@@ -18,11 +19,8 @@ fine:
 	gcc $(ser).c -o x$(ser) -g -pthread -Werror=all -DPRINT_DEBUG -DPRINT_DEBUG_FINE
 	gcc $(cli).c -o x$(cli) -g -pthread -Werror=all -DPRINT_DEBUG -DPRINT_DEBUG_FINE -DDEBUG_SERVER
 
-setup:
-	touch $(ser).c $(cli).c $(cmnh).h $(cli-regh).h
-
 clear:
 	rm -f x$(ser) x$(cli)
 
 subl:
-	subl Makefile $(ser).c $(cli).c $(cmnh).h $(regh).h
+	subl Makefile $(ser).c $(cli).c $(cmn).h $(cli-reg).h $(ser-reg).h

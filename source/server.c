@@ -3,6 +3,11 @@
 // Define the length of pending connection request
 #define MAX_BACKLOG 1024
 
+
+// Has to be less than SEMVMX 
+//	Maximum allowable value for semval: implementation dependent (32767).
+#define MAX_THREADS 1024
+
 void sigint_handler(int signum);
 void *thread_communication_routine(void *arg);
 
@@ -16,6 +21,12 @@ struct thread_arg{
 // sockfd is for the socket that accept connection, acceptfd is for the socket that does the communication
 int sockfd, acceptfd;
 
+// users file and semaphores
+const char *users_filename = "users";
+FILE *users_file;
+int UR;	//Users Read
+int UW;	//Users Write
+
 int main(int argc, char const *argv[])
 {
 	pthread_t tids[MAX_BACKLOG];
@@ -26,6 +37,25 @@ int main(int argc, char const *argv[])
 
 	// Print the ip address in current network
 	system("hostname -I | awk \'{print $1}\'");
+
+	// Open Users file
+	users_file = fopen(users_filename, "r+");
+
+	// Initialize Users file semaphores
+	UR = semget(IPC_PRIVATE, 1, IPC_CREAT | 0660);
+	UW = semget(IPC_PRIVATE, 1, IPC_CREAT | 0660);
+	if(UR == -1 || UW == -1){
+		perror("Error in server on semget\n");
+		exit(EXIT_FAILURE);
+	}
+	if(semctl(UR, 0, SETVAL, MAX_THREADS) < 0){
+		perror("Error in server on semctl(UR)");
+		exit(EXIT_FAILURE);
+	}
+	if(semctl(UW, 0, SETVAL, 1) < 0){
+		perror("Error in server on semctl(UW)");
+		exit(EXIT_FAILURE);
+	}
 
 	// Create the socket for connection, use TCP
 	if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0){
@@ -138,7 +168,7 @@ void *thread_communication_routine(void *arg){
 
 		// At the moment, give every use uid 1000 during registration
 		if(op == 'p'){
-			if((send_message_to(acceptfd, 1, OP_SEND_REG_UID, "1000")) < 0)
+			if((send_message_to(acceptfd, 1, OP_REG_UID, "1000")) < 0)
 				exit(EXIT_FAILURE);
 		}
 

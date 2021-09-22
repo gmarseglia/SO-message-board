@@ -6,11 +6,14 @@
 #include <signal.h>
 #include <pthread.h>
 #include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/sem.h>
+#include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/uio.h>
 #include <netinet/in.h>
 #include <netinet/ip.h>
 #include <arpa/inet.h>
-#include <sys/uio.h>
 
 #define fflush(stdin) while(getchar() != '\n');
 
@@ -20,10 +23,21 @@
 
 // OP codes
 #define OP_MESSAGE "m"
-#define OP_SEND_REG_USERNAME "u"
-#define OP_SEND_REG_PASSWD "p"
-#define OP_SEND_REG_UID "i"
+
+#define OP_REG_USERNAME "u"
+#define OP_REG_PASSWD "p"
+#define OP_REG_UID "i"
+
+#define OP_LOG_USERNAME "U"
+
 #define OP_NOT_ACCEPTED "n"
+
+// Struct containing the user info
+struct user_info {
+	char *username;
+	char *passwd;
+	int uid;
+};
 
 /*
 	DESCRIPTION:

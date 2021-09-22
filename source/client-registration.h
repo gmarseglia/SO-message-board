@@ -1,10 +1,3 @@
-// Struct containing the user info
-struct user_info {
-	char *username;
-	char *passwd;
-	int uid;
-};
-
 void login_registration(int *sockfd, struct sockaddr_in *server_address, struct user_info *user_info);
 void login(int sockfd, struct user_info *user_info);
 int registration(int sockfd, struct user_info *user_info);
@@ -76,10 +69,10 @@ void login_registration(int *sockfd, struct sockaddr_in *server_address, struct 
 int registration(int sockfd, struct user_info *user_info){
 	char *container;
 
-	if(send_message_to(sockfd, 0, OP_SEND_REG_USERNAME, user_info->username) < 0)
+	if(send_message_to(sockfd, 0, OP_REG_USERNAME, user_info->username) < 0)
 		exit(EXIT_FAILURE);
 
-	if(send_message_to(sockfd, 0, OP_SEND_REG_PASSWD, user_info->passwd) < 0)
+	if(send_message_to(sockfd, 0, OP_REG_PASSWD, user_info->passwd) < 0)
 		exit(EXIT_FAILURE);
 	
 	if(receive_message_from(sockfd, NULL, &op, &container) < 0)
