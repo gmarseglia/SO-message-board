@@ -19,7 +19,7 @@ void login_registration(int *sockfd, struct sockaddr_in *server_address, struct 
 		scanf("%c", &op);
 		fflush(stdin);
 		if(!(op == 'R' || op == 'r' || op == 'L' || op == 'l')){
-			printf("Please type \'R\' or \'L\' without \'\n");
+			printf("Please type \'R\' or \'L\'\n");
 			continue;
 		}
 

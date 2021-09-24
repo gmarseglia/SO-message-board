@@ -20,20 +20,14 @@ struct thread_arg{
 const int MAX_THREADS = 1024;
 
 // Users file
-const char *users_filename = "users";
+const char *users_filename = "users.list";
 
 // sockfd is for the socket that accept connection, acceptfd is for the socket that does the communication
 int sockfd, acceptfd;
 
-// Semaphores Struct
-// struct semaphores{
-// 	int UR;	//Users Read
-// 	int UW;	//Users Write
-// } sems;
-
+// Semaphores
 int UW;	//Users Write 
 int UR;	//Users Read
-
 
 int main(int argc, char const *argv[])
 {
@@ -47,7 +41,7 @@ int main(int argc, char const *argv[])
 	system("hostname -I | awk \'{print $1}\'");
 
 	// Create the Users file
-	int usersfd = open(users_filename, O_CREAT | O_RDWR, 0660);
+	int usersfd = open(users_filename, O_RDWR);
 	if(usersfd < 0){
 		perror("Error in server on open users file");
 		exit(EXIT_FAILURE);
@@ -167,32 +161,29 @@ void *thread_communication_routine(void *arg){
 	free(client_addr);
 	free(arg);
 
-	// Open Users file
-	FILE *users_file = fopen(users_filename, "r+");
-	if(users_file == NULL){
-		perror("Error in thread_communication_routine on fopen");
+	struct user_info *user_info = malloc(sizeof(struct user_info));
+	if(user_info == NULL){
+		perror("Error in thread_communication_routine on malloc");
 		exit(EXIT_FAILURE);
 	}
 
-	char *container, op;
+	char *recipient, op;
 	int uid;
 
 	printf("Thread[%d] accepted connection from %s:%d\n", id, str_client_addr, i_client_port);
 
+	// Start the login or registration phase, mandatory for every client
+	if(login_registration(acceptfd, user_info) < 0)
+		return thread_close_connection(id, acceptfd);
+
 	// Main cycle
 	//	gets interrupted when receive_message_from returns 0, meaning that connection was closed by client
-	while(receive_message_from(acceptfd, &uid, &op, &container) > 0){
+	while(receive_message_from(acceptfd, &uid, &op, &recipient) > 0){
 
 		printf("Thread[%d] received %c op from %d@%s:%d:\n%s\n",
-			id, op, uid, str_client_addr, i_client_port, container);
+			id, op, uid, str_client_addr, i_client_port, recipient);
 
-		// At the moment, give every use uid 1000 during registration
-		if(op == 'p'){
-			if((send_message_to(acceptfd, 1, OP_REG_UID, "1000")) < 0)
-				exit(EXIT_FAILURE);
-		}
-
-		free(container);
+		free(recipient);
 	}
 
 	return thread_close_connection(id, acceptfd);

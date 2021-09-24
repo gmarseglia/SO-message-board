@@ -15,8 +15,8 @@ int main(int argc, const char *argv[]){
 
 	struct sockaddr_in addr;
 
-	// DEBUG_SERVER 127.0.0.1:6990
 	#ifdef DEBUG_SERVER
+	// DEBUG_SERVER 127.0.0.1:6990
 	ip_address = "127.0.0.1";
 	port = argc == 1 ? INITIAL_SERV_PORT : strtol(argv[1], NULL, 10);
 	

@@ -37,7 +37,7 @@ int registration(FILE *users_file, int acceptfd, struct user_info *user_info){
 	int uid;
 	char op;
 	struct sembuf sem_op;
-	sem_op.sem_num = 0;
+	sem_op.sem_num = 1;
 	sem_op.sem_flg = 0;
 	struct user_info *read_user_info;
 	if((read_user_info = malloc(sizeof(struct user_info))) == NULL){
@@ -59,11 +59,15 @@ int registration(FILE *users_file, int acceptfd, struct user_info *user_info){
 	sem_op.sem_op = -1;
 	semop(UW, &sem_op, 1);
 
-	// #4 Wait UR N
-	sem_op.sem_op = -MAX_THREADS;
+	// #4 Wait UR
+	sem_op.sem_op = -1;
 	semop(UR, &sem_op, 1);
 
-	// #5 Find username
+	// #5 Signal UW
+	sem_op.sem_op = 1;
+	semop(UW, &sem_op, 1);
+
+	// #6 Find username
 	char found = 0;
 	while(fscanf(users_file, "%d %ms %ms",
 		&(read_user_info->uid), &(read_user_info->username), &(read_user_info->passwd)) != EOF){
@@ -77,13 +81,9 @@ int registration(FILE *users_file, int acceptfd, struct user_info *user_info){
 	}
 
 	if(found == 1){	
-		// #6a Signal UR N
-		sem_op.sem_op = MAX_THREADS;
-		semop(UR, &sem_op, 1);
-
-		// #7a Signal UW
+		// #7a Signal UR
 		sem_op.sem_op = 1;
-		semop(UW, &sem_op, 1);
+		semop(UR, &sem_op, 1);
 
 		// #8a Send OP_NOT_ACCEPTED to client
 		send_message_to(acceptfd, 1, OP_NOT_ACCEPTED, "Username already existing.\n");
@@ -91,8 +91,18 @@ int registration(FILE *users_file, int acceptfd, struct user_info *user_info){
 		// #9a
 		return -1;
 	}
-	
-	// #6b Compute new UID
+
+	// #7b Wait UW
+	sem_op.sem_op = -1;
+	semop(UW, &sem_op, 1);
+
+	// #8b Wait UR, MAX_THREADS - 1
+	sem_op.sem_op = -(MAX_THREADS - 1);
+	semop(UR, &sem_op, 1);
+
+	sleep(5);
+
+	// #9b Compute new UID
 	//	At the moment writes and reads are exclusive to this thread
 	int max_line_len = MAXSIZE_USERNAME + MAXSIZE_PASSWD + 5 + 3 + 1;
 	int last_uid;
@@ -108,7 +118,7 @@ int registration(FILE *users_file, int acceptfd, struct user_info *user_info){
 	printf("last_uid=%d, user_info->uid=%d\n", last_uid, user_info->uid);
 	#endif
 
-	// 7b Append on file
+	// 10b Append on file
 	fseek(users_file, 0, SEEK_END);
 	fprintf(users_file, "%d %s %s\n",
 		user_info->uid, user_info->username, user_info->passwd);
@@ -119,20 +129,20 @@ int registration(FILE *users_file, int acceptfd, struct user_info *user_info){
 	printf("fync|fclose completed\n");
 	#endif
 
-	// #8b Signal UR, MAX_THREADS
-	sem_op.sem_op = MAX_THREADS;
+	// #11b Signal UR, MAX_THREADS - 1
+	sem_op.sem_op = (MAX_THREADS - 1);
 	semop(UR, &sem_op, 1);
 
-	// #9b Signal UW
+	// #12b Signal UW
 	sem_op.sem_op = 1;
 	semop(UW, &sem_op, 1);
 
-	// #10b Send client OP_REG_UID with uid
+	// #13b Send client OP_REG_UID with uid
 	char uid_str[6];
 	sprintf(uid_str, "%d", user_info->uid);
 	send_message_to(acceptfd, UID_SERVER, OP_REG_UID, uid_str);
 
-	// 11b go to main cycle
+	// 14b go to main cycle
 	return 0;
 }
 
