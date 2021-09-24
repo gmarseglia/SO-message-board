@@ -3,5 +3,3 @@ Suggestion on writev():
 
 Implicit declaration of inet_ntoa solution:
 	https://stackoverflow.com/questions/11049687/something-about-inet-ntoa
-
-
