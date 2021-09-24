@@ -1,13 +1,12 @@
 extern int UR;
 extern int UW;
-extern FILE *users_file;
 extern const int MAX_THREADS;
 
-int login_registration(int acceptfd, struct user_info* user_info);
-int registration(int acceptfd, struct user_info *user_info);
-int login(int acceptfd, struct user_info *user_info);
+int login_registration(FILE *users_file, int acceptfd, struct user_info* user_info);
+int registration(FILE *users_file, int acceptfd, struct user_info *user_info);
+int login(FILE *users_file, int acceptfd, struct user_info *user_info);
 
-int login_registration(int acceptfd, struct user_info* user_info){
+int login_registration(FILE *users_file, int acceptfd, struct user_info* user_info){
 	int uid;
 	char op;
 
@@ -15,9 +14,9 @@ int login_registration(int acceptfd, struct user_info* user_info){
 		return -1;
 
 	if(uid == 0 && op == OP_REG_USERNAME)
-		return registration(acceptfd, user_info);
+		return registration(users_file, acceptfd, user_info);
 	else if(uid == 0 && op == OP_LOG_USERNAME)
-		return login(acceptfd, user_info);
+		return login(users_file, acceptfd, user_info);
 	else{
 		send_message_to(acceptfd, 1, OP_NOT_ACCEPTED, "Incorrect first op");
 		return -1;
@@ -25,7 +24,8 @@ int login_registration(int acceptfd, struct user_info* user_info){
 
 }
 
-int registration(int acceptfd, struct user_info *user_info){
+int registration(FILE *users_file, int acceptfd, struct user_info *user_info){
+	// Local variables declaration
 	int uid;
 	char op;
 	struct sembuf sem_op;
@@ -92,11 +92,25 @@ int registration(int acceptfd, struct user_info *user_info){
 	sem_op.sem_op = -(MAX_THREADS - 1);
 	semop(UR, &sem_op, 1);
 
-	// CONTINUE FROM 9b
+	// #9b Compute new UID
+	//	At the moment writes and reads are exclusive to this thread
+	int max_line_len = SIZEOF_INT + MAXSIZE_USERNAME + MAXSIZE_PASSWD;
+	int scanf_read;
+	char *line_buffer;
+
+	fseek(users_file, -max_line_len, SEEK_END);
+	while(fscanf(users_file, "m^[\n]", line_buffer) != EOF){
+
+		#ifdef PRINT_DEBUG_FINE
+		printf("line_buffer=%s\n")
+		#endif	
+		fgetc(users_file);
+	}
+
 
 	return 0;
 }
 
-int login(int acceptfd, struct user_info *user_info){
+int login(FILE * users_file, int acceptfd, struct user_info *user_info){
 	return 0;
 }

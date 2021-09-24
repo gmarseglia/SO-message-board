@@ -6,6 +6,7 @@
 
 void sigint_handler(int signum);
 void *thread_communication_routine(void *arg);
+void *thread_close_connection(int id, int sockfd);
 
 // Struct for thread argument
 struct thread_arg{
@@ -18,12 +19,11 @@ struct thread_arg{
 //	Maximum allowable value for semval: implementation dependent (32767).
 const int MAX_THREADS = 1024;
 
-// sockfd is for the socket that accept connection, acceptfd is for the socket that does the communication
-int sockfd, acceptfd;
-
 // Users file
 const char *users_filename = "users";
-FILE *users_file;
+
+// sockfd is for the socket that accept connection, acceptfd is for the socket that does the communication
+int sockfd, acceptfd;
 
 // Semaphores Struct
 // struct semaphores{
@@ -46,8 +46,13 @@ int main(int argc, char const *argv[])
 	// Print the ip address in current network
 	system("hostname -I | awk \'{print $1}\'");
 
-	// Open Users file
-	users_file = fopen(users_filename, "r+");
+	// Create the Users file
+	int usersfd = open(users_filename, O_CREAT | O_RDWR, 0660);
+	if(usersfd < 0){
+		perror("Error in server on open users file");
+		exit(EXIT_FAILURE);
+	}
+	if(close(usersfd) < 0) perror("Error in server on close users file");
 
 	// Initialize Users file semaphores
 	UR = semget(IPC_PRIVATE, 1, IPC_CREAT | 0660);
@@ -162,6 +167,13 @@ void *thread_communication_routine(void *arg){
 	free(client_addr);
 	free(arg);
 
+	// Open Users file
+	FILE *users_file = fopen(users_filename, "r+");
+	if(users_file == NULL){
+		perror("Error in thread_communication_routine on fopen");
+		exit(EXIT_FAILURE);
+	}
+
 	char *container, op;
 	int uid;
 
@@ -183,8 +195,11 @@ void *thread_communication_routine(void *arg){
 		free(container);
 	}
 
+	return thread_close_connection(id, acceptfd);
+}
+
+void *thread_close_connection(int id, int sockfd){
 	printf("Thread[%d] has found closed connection.\n", id);
 	if(close(acceptfd) < 0 && errno != EBADF) perror("Error in server on close accepted socket\n");
 	return NULL;
-
 }

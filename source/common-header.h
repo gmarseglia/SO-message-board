@@ -5,14 +5,19 @@
 #include <unistd.h>
 #include <signal.h>
 #include <pthread.h>
+#include <fcntl.h>
+
+#include <sys/stat.h>
 #include <sys/types.h>
 #include <sys/ipc.h>
 #include <sys/sem.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/uio.h>
+
 #include <netinet/in.h>
 #include <netinet/ip.h>
+
 #include <arpa/inet.h>
 
 #define fflush(stdin) while(getchar() != '\n');
