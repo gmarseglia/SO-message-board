@@ -39,7 +39,7 @@ int main(int argc, const char *argv[]){
 		inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 
 	// Client needs to register or login before being able to send message
-	login_registration(&sockfd, &addr, &user_info);
+	while(login_registration(&sockfd, &addr, &user_info) < 0);
 
 	// Main cycle
 	//	gets interrupted by SIGINT or errors
@@ -69,4 +69,5 @@ int main(int argc, const char *argv[]){
 void sigint_handler(int signum){
 	if(close(sockfd) < 0 && errno != EBADF) perror("Error in client on close.\n");
 	printf("Client has interrupted connection.\n");
+	exit(0);
 }

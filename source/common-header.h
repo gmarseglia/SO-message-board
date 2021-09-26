@@ -35,6 +35,8 @@
 #define OP_REG_PASSWD 'p'
 #define OP_REG_UID 'i'
 #define OP_LOG_USERNAME 'U'
+#define OP_LOG_PASSWD 'P'
+#define OP_LOG_UID 'I'
 #define OP_NOT_ACCEPTED 'n'
 
 // Fixed UID
