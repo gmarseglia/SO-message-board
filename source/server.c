@@ -190,7 +190,7 @@ void *thread_communication_routine(void *arg){
 		#ifdef SIMPLE_OK_RESPONSE
 		printf("Simple ok response\n");
 		if(op == OP_MSG_BODY)
-			send_message_to(acceptfd, UID_SERVER, OP_OK, "ok");
+			send_message_to(acceptfd, UID_SERVER, OP_OK, NULL);
 		#endif
 
 	}

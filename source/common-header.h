@@ -71,7 +71,7 @@ int receive_message_from(int sockfd, int *uid, char *op, char **recipient);
 */
 int send_message_to(int sockfd, int uid, char op, char *message){
 	int message_len, byte_written;
-	message_len = strlen(message);
+	message_len = message == NULL ? 0 : strlen(message);
 
 	// iovec used by writev
 	struct iovec iov[3];
@@ -95,6 +95,10 @@ int send_message_to(int sockfd, int uid, char op, char *message){
 	#ifdef PRINT_DEBUG_FINE
 	printf("writev has written %d bytes\n", byte_written);
 	#endif
+
+	// If messagge == NULL, don't send second part
+	if(message == NULL)
+		return 0;
 
 	// Send message
 	if((byte_written = write(sockfd, message, message_len)) 
@@ -123,6 +127,7 @@ int send_message_to(int sockfd, int uid, char op, char *message){
 int receive_message_from(int sockfd, int *uid, char *op, char **recipient){
 	int message_len;
 	int null_uid;
+	char null_op;
 	int byte_read = 0;
 
 	struct iovec iov[3];
@@ -130,7 +135,7 @@ int receive_message_from(int sockfd, int *uid, char *op, char **recipient){
 	iov[0].iov_base = uid == NULL ? &null_uid : uid;
 	iov[0].iov_len = SIZEOF_INT;
 
-	iov[1].iov_base = op;
+	iov[1].iov_base = op == NULL ? &null_op : op;
 	iov[1].iov_len = SIZEOF_CHAR;
 
 	iov[2].iov_base = &message_len;
@@ -145,6 +150,13 @@ int receive_message_from(int sockfd, int *uid, char *op, char **recipient){
 	printf("readv has read %d bytes, message_len=%d\n",
 		byte_read, message_len);
 	#endif
+
+	// If message_len == 0 -> sender has not included message
+	// If recipient == NULL -> receiver is not interested
+	if(message_len == 0 || recipient == NULL){
+		*recipient = NULL;
+		return 0;
+	}
 
 	*recipient = calloc(sizeof(char), message_len + 1);
 	memset(*recipient, '\0', message_len + 1);

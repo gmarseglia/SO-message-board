@@ -58,7 +58,7 @@ int main(int argc, const char *argv[]){
 int main_cycle(){
 		char cli_op;
 		// Ask users what cli_op they want to do
-		printf("What do you want to do?\n(P)ost, (E)xit\n");
+		printf("\nWhat do you want to do?\n(P)ost, (E)xit\n");
 		scanf("%c", &cli_op);
 		fflush(stdin);
 
