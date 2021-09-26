@@ -1,5 +1,5 @@
 void login_registration(int *sockfd, struct sockaddr_in *server_address, struct user_info *user_info);
-void login(int sockfd, struct user_info *user_info);
+int login(int sockfd, struct user_info *user_info);
 int registration(int sockfd, struct user_info *user_info);
 void user_info_fill(struct user_info* user_info);
 
@@ -8,6 +8,7 @@ char op;
 /*
 	DESCRIPTION:
 		Ask if user wants to login or register
+		Fill user's info
 		Create the socket
 		Connect to server
 		Call function for login or register
@@ -23,6 +24,9 @@ void login_registration(int *sockfd, struct sockaddr_in *server_address, struct 
 			continue;
 		}
 
+		// Ask the user to type username and passwd
+		user_info_fill(user_info);
+
 		// Create the socket
 		//	done here because on registration or login error, the socket gets closed
 		*sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -30,9 +34,6 @@ void login_registration(int *sockfd, struct sockaddr_in *server_address, struct 
 			perror("Error in client on socket attempt.\n");
 			exit(EXIT_FAILURE);
 		}
-
-		// Ask the user to type username and passwd
-		user_info_fill(user_info);
 
 		// Connect to server
 		if(connect(*sockfd, (struct sockaddr *)server_address, sizeof(struct sockaddr)) < 0){
@@ -68,6 +69,7 @@ void login_registration(int *sockfd, struct sockaddr_in *server_address, struct 
 */
 int registration(int sockfd, struct user_info *user_info){
 	char *container;
+	int read_uid;
 
 	if(send_message_to(sockfd, 0, OP_REG_USERNAME, user_info->username) < 0)
 		exit(EXIT_FAILURE);
@@ -75,25 +77,48 @@ int registration(int sockfd, struct user_info *user_info){
 	if(send_message_to(sockfd, 0, OP_REG_PASSWD, user_info->passwd) < 0)
 		exit(EXIT_FAILURE);
 	
-	if(receive_message_from(sockfd, NULL, &op, &container) < 0)
+	if(receive_message_from(sockfd, &read_uid, &op, &container) < 0)
 		exit(EXIT_FAILURE);
 
-	if(op == 'i'){
+	if(read_uid == UID_SERVER && op == OP_REG_UID){
 		user_info->uid = strtol(container, NULL, 10);
 		printf("Registration successful.\n");
 		return 0;
-	} else if(op == 'n'){
+	} else if(read_uid == UID_SERVER && op == OP_NOT_ACCEPTED){
 		printf("Registration unsuccessful: %s\n", container);
 		if(close(sockfd) < 0) perror("Error in registration on close");
 		return -1;
 	} else {
-		fprintf(stderr, "Unexpected error during registration.\n");
+		fprintf(stderr, "Unexpected error during registration.\nUID=%d, op=%c\n", read_uid, op);
 		exit(EXIT_FAILURE);
 	}
 }
 
-void login(int sockfd, struct user_info *user_info){
-	return;
+int login(int sockfd, struct user_info *user_info){
+	char *container;
+	int read_uid;
+
+	if(send_message_to(sockfd, 0, OP_LOG_USERNAME, user_info->username) < 0)
+		exit(EXIT_FAILURE);
+
+	if(send_message_to(sockfd, 0, OP_LOG_PASSWD, user_info->passwd) < 0)
+		exit(EXIT_FAILURE);
+	
+	if(receive_message_from(sockfd, &read_uid, &op, &container) < 0)
+		exit(EXIT_FAILURE);
+
+	if(read_uid == UID_SERVER && op == OP_LOG_UID){
+		user_info->uid = strtol(container, NULL, 10);
+		printf("Registration successful.\n");
+		return 0;
+	} else if(read_uid == UID_SERVER && op == OP_NOT_ACCEPTED){
+		printf("Registration unsuccessful: %s\n", container);
+		if(close(sockfd) < 0) perror("Error in registration on close");
+		return -1;
+	} else {
+		fprintf(stderr, "Unexpected error during registration.\nUID=%d, op=%c\n", read_uid, op);
+		exit(EXIT_FAILURE);
+	}
 }
 
 /*
