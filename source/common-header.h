@@ -30,7 +30,8 @@
 #define MAXSIZE_PASSWD 32
 
 // OP codes
-#define OP_MESSAGE 'm'
+#define OP_MSG_SUBJECT 'm'
+#define OP_MSG_BODY 'M'
 #define OP_REG_USERNAME 'u'
 #define OP_REG_PASSWD 'p'
 #define OP_REG_UID 'i'
@@ -38,6 +39,7 @@
 #define OP_LOG_PASSWD 'P'
 #define OP_LOG_UID 'I'
 #define OP_NOT_ACCEPTED 'n'
+#define OP_OK 'K'
 
 // Fixed UID
 #define UID_ANON 0

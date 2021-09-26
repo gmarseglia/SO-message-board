@@ -1,6 +1,8 @@
 #include "common-header.h"
 #include "server-registration.h"
 
+#define SIMPLE_OK_RESPONSE
+
 // Define the length of pending connection request
 #define MAX_BACKLOG 1024
 
@@ -184,6 +186,13 @@ void *thread_communication_routine(void *arg){
 			id, op, uid, str_client_addr, i_client_port, recipient);
 
 		free(recipient);
+
+		#ifdef SIMPLE_OK_RESPONSE
+		printf("Simple ok response\n");
+		if(op == OP_MSG_BODY)
+			send_message_to(acceptfd, UID_SERVER, OP_OK, "ok");
+		#endif
+
 	}
 
 	return thread_close_connection(id, acceptfd);
