@@ -16,8 +16,11 @@ int post(int sockfd, user_info client_ui){
 	while(1){
 		scanf("%m[^\n]", &tmp_body);
 		fflush(stdin);
-		if(tmp_body == NULL)
+		if(tmp_body == NULL){
+			if(body_len == 0)
+				continue;
 			break;
+		}
 		body_len = body_len + strlen(tmp_body) + 1;
 		body = reallocarray(body, sizeof(char), body_len + 1);
 		body[body_len] = '\0';
@@ -32,21 +35,27 @@ int post(int sockfd, user_info client_ui){
 
 	// #3: Send (UID, OP_MSG_SUBJECT, Subject)
 	if(send_message_to(sockfd, client_ui.uid, OP_MSG_SUBJECT, subject) < 0)
-		return -1;
+		exit_failure();
 
 	// #4: Send (UID, OP_MSG_BODY, Body)
 	if(send_message_to(sockfd, client_ui.uid, OP_MSG_BODY, body) < 0)
-		return -1;
+		exit_failure();
 
 	// #5: Receive (UID_SERVER, OP_OK, ID of the message)
 	#ifdef WAIT_SERVER_OK
 	operation op;
-	if(receive_operation_from(sockfd, &op) < 0 || op.uid != UID_SERVER){
-		fprintf(stderr, "Error in Post on receive_message_from\n");
-		exit(EXIT_FAILURE);
-	}
-	if(op.code != OP_OK){
-		fprintf(stderr, "Post refused: %s\n", op.text);
+
+	if(receive_operation_from(sockfd, &op) < 0)
+		exit_failure();
+	if(op.uid == UID_SERVER && op.code == OP_OK)
+		return 0;
+	else if(op.uid == UID_SERVER && op.code == OP_NOT_ACCEPTED){
+		printf("Post refused: %s\n", op.text);
+		free(op.text);
+		return -1;
+	} else {
+		fprintf(stderr, "Unknown error. Exiting.\n");
+		exit_failure();
 	}
 	#endif
 

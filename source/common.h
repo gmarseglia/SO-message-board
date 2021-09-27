@@ -24,6 +24,7 @@
 #define COMMON_H_INCLUDED
 
 #define fflush(stdin) while(getchar() != '\n');
+#define exit_failure() exit(EXIT_FAILURE);
 
 #define SIZEOF_CHAR 1
 #define SIZEOF_INT 4

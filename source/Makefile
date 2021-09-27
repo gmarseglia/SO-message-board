@@ -9,8 +9,8 @@ usrf='users.list'
 
 all: init
 	@clear
-	gcc $(server-sources) -o xserver -pthread -Werror=all -DPRINT_DEBUG
-	gcc $(client-sources) -o xclient -pthread -Werror=all -DPRINT_DEBUG -DDEBUG_SERVER
+	gcc $(server-sources) -o xserver -pthread -Werror=all -g -DPRINT_DEBUG
+	gcc $(client-sources) -o xclient -pthread -Werror=all -g -DPRINT_DEBUG -DDEBUG_SERVER
 
 simple:
 	@clear
