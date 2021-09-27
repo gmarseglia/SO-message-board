@@ -1,4 +1,4 @@
-#include "common-header.h"
+#include "common.h"
 #include "client-registration.h"
 
 #define CLI_OP_POST 'P'

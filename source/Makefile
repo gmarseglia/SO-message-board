@@ -2,7 +2,7 @@ ser='server'
 ser-reg='server-registration'
 cli='client'
 cli-reg='client-registration'
-cmn='common-header'
+cmn='common'
 usrf='users.list'
 
 all: setup

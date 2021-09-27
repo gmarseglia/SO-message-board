@@ -1,4 +1,4 @@
-#include "common-header.h"
+#include "common.h"
 #include "server-registration.h"
 
 #define SIMPLE_OK_RESPONSE
