@@ -183,6 +183,8 @@ int login(FILE * users_file, int acceptfd, user_info *client_ui){
 	char uid_str[6];
 	sprintf(uid_str, "%d", read_ui->uid);
 	send_message_to(acceptfd, UID_SERVER, OP_LOG_UID, uid_str);
+	// Save UID in client_ui
+	client_ui->uid = read_ui->uid;
 
 	// #10: return to main cycle
 	return 0;

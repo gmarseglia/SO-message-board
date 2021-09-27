@@ -164,17 +164,16 @@ void *thread_communication_routine(void *arg){
 	free(client_addr);
 	free(arg);
 
-	struct user_info *user_info = malloc(sizeof(struct user_info));
-	if(user_info == NULL){
-		perror("Error in thread_communication_routine on malloc");
-		exit(EXIT_FAILURE);
-	}
+	user_info client_ui;
 
-	printf("Thread[%d] accepted connection from %s:%d\n", id, str_client_addr, i_client_port);
+	printf("Thread[%d]: accepted connection from %s:%d\n", id, str_client_addr, i_client_port);
 
 	// Start the login or registration phase, mandatory for every client
-	if(login_registration(acceptfd, user_info) < 0)
+	if(login_registration(acceptfd, &client_ui) < 0)
 		return thread_close_connection(id, acceptfd);
+
+	printf("Thread[%d]: %d,%s authenticated from %s:%d\n",
+		id, client_ui.uid, client_ui.username, str_client_addr, i_client_port);
 
 	// Main cycle
 	//	gets interrupted when receive_message_from returns 0, meaning that connection was closed by client
