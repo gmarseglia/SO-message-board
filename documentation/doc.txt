@@ -9,3 +9,10 @@ Struct initialization:
 
 Typedef vs struct:
 	https://stackoverflow.com/questions/1675351/typedef-struct-vs-struct-definitions
+
+Source vs headers:
+	https://stackoverflow.com/questions/3482948/what-is-the-fundamental-difference-between-source-and-header-files-in-c
+	https://stackoverflow.com/questions/5128664/how-to-split-a-c-program-into-multiple-files
+	https://stackoverflow.com/questions/18777326/compiling-multiple-c-files-with-gcc
+	https://stackoverflow.com/questions/3041797/how-to-use-a-defined-struct-from-another-source-file
+
