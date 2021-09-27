@@ -1,22 +1,10 @@
-extern int UR;
-extern int UW;
-extern const int MAX_THREADS;
-extern const char *users_filename;
+#include "server-routines.h"
 
-int login_registration(int acceptfd, user_info* client_ui);
 int registration(FILE *users_file, int acceptfd, user_info *client_ui);
 int login(FILE *users_file, int acceptfd, user_info *client_ui);
 user_info *find_user(FILE *users_file, char *username);
 
-/*
-	DESCRIPTION:
-		Ask user R or L, for Registration or Login
-		Call correct function
-	RETURNS:
-		In case of success: 0
-		In case of unsuccess, retry possible: -1
-		In case of error: exit(EXIT_FAILURE)
-*/
+
 int login_registration(int acceptfd, user_info* client_ui){
 	int read_uid;
 	char read_op;

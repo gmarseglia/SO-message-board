@@ -1,16 +1,9 @@
-int login_registration(int *sockfd, struct sockaddr_in *server_address, user_info *client_ui);
+#include "client-routines.h"
+
 int login(int sockfd, user_info *client_ui);
 int registration(int sockfd, user_info *client_ui);
 void user_info_fill(user_info* client_ui);
 
-/*
-	DESCRIPTION:
-		Ask if user wants to login or register
-		Fill user's info
-		Create the socket
-		Connect to server
-		Call function for login or register
-*/
 int login_registration(int *sockfd, struct sockaddr_in *server_address, user_info *client_ui){
 	char op;
 	while(1){

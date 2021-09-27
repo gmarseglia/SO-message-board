@@ -1,33 +1,36 @@
-ser='server'
-ser-reg='server-registration'
-cli='client'
-cli-reg='client-registration'
-cmn='common'
+server-source=common.c server.c server-log-reg.c
+client-source=common.c client.c client-log-reg.c client-post.c
+
 usrf='users.list'
 
-all: setup
+all: init
 	@clear
-	gcc $(ser).c $(cmn).c -o x$(ser) -pthread -Werror=all -DPRINT_DEBUG
-	gcc $(cli).c $(cmn).c -o x$(cli) -pthread -Werror=all -DPRINT_DEBUG -DDEBUG_SERVER
-
+	gcc $(server-source) -o xserver -pthread -Werror=all -DPRINT_DEBUG
+	gcc $(client-source) -o xclient -pthread -Werror=all -DPRINT_DEBUG -DDEBUG_SERVER
 
 simple:
 	@clear
-	gcc $(ser).c $(cmn).c -o x$(ser) -pthread
-	gcc $(cli).c $(cmn).c -o x$(cli) -pthread
+	gcc $(server-source) -o xserver -pthread
+	gcc $(client-source) -o xclient -pthread
 
 fine: setup
 	@clear
-	gcc $(ser).c $(cmn).c -o x$(ser) -g -pthread -Werror=all -DPRINT_DEBUG -DPRINT_DEBUG_FINE
-	gcc $(cli).c $(cmn).c -o x$(cli) -g -pthread -Werror=all -DPRINT_DEBUG -DPRINT_DEBUG_FINE -DDEBUG_SERVER
+	gcc $(server-source) -o xserver -pthread -g -Werror=all -DPRINT_DEBUG -DPRINT_DEBUG_FINE
+	gcc $(client-source) -o xclient -pthread -g -Werror=all -DPRINT_DEBUG -DPRINT_DEBUG_FINE -DDEBUG_SERVER
 
-setup:
+init:
 	echo '0000 anonymoususer0000000000000000000 00000000000000000000000000000000' > $(usrf)
 	echo '0001 server00000000000000000000000000 00000000000000000000000000000000' >> $(usrf)
 	echo '1000 startpointavaibleuserid000000000 00000000000000000000000000000000' >> $(usrf)
 
 clear:
-	rm -f x$(ser) x$(cli) $(usrf)
+	rm -f xserver xclient $(usrf)
 
-subl:
-	subl Makefile $(ser).c $(cli).c $(cmn).c $(cmn).h $(cli-reg).h $(ser-reg).h
+subl-all:
+	subl Makefile common.h server* client*
+
+subl-server:
+	subl common.h server*
+
+subl-client:
+	subl common.h client*

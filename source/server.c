@@ -1,5 +1,5 @@
 #include "common.h"
-#include "server-registration.h"
+#include "server-routines.h"
 
 #define SIMPLE_OK_RESPONSE
 
