@@ -59,7 +59,7 @@ int registration(FILE *users_file, int acceptfd, user_info *client_ui){
 	semop(UW, &sem_op, 1);
 
 	// #4 Wait UR N
-	sem_op.sem_op = -MAX_THREADS;
+	sem_op.sem_op = -MAX_THREAD;
 	semop(UR, &sem_op, 1);
 
 	// #5 Find username
@@ -67,7 +67,7 @@ int registration(FILE *users_file, int acceptfd, user_info *client_ui){
 
 	if(read_ui != NULL){	
 		// #6a Signal UR N
-		sem_op.sem_op = MAX_THREADS;
+		sem_op.sem_op = MAX_THREAD;
 		semop(UR, &sem_op, 1);
 
 		// #7a Signal UW
@@ -103,8 +103,8 @@ int registration(FILE *users_file, int acceptfd, user_info *client_ui){
 		client_ui->uid, client_ui->username, client_ui->passwd);
 	fclose(users_file);
 
-	// #8b Signal UR, MAX_THREADS
-	sem_op.sem_op = MAX_THREADS;
+	// #8b Signal UR, MAX_THREAD
+	sem_op.sem_op = MAX_THREAD;
 	semop(UR, &sem_op, 1);
 
 	// #9b Signal UW

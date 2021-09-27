@@ -1,19 +1,6 @@
 #include "common.h"
 #include "server-routines.h"
 
-// Initial Server Port number
-#define INITIAL_SERV_PORT 6990
-
-// Define the length of pending connection request
-#define MAX_BACKLOG 1024
-
-// Has to be less than SEMVMX 
-//	Maximum allowable value for semval: implementation dependent (32767).
-const int MAX_THREADS = 1024;
-
-// Users file
-const char *users_filename = "users.list";
-
 void sigint_handler(int signum);
 void *thread_communication_routine(void *arg);
 void *thread_close_connection(int id, int sockfd);
@@ -27,10 +14,6 @@ struct thread_arg{
 
 // sockfd is for the socket that accept connection, acceptfd is for the socket that does the communication
 int sockfd, acceptfd;
-
-// Semaphores
-int UW;	//Users Write 
-int UR;	//Users Read
 
 int main(int argc, char const *argv[])
 {
@@ -58,7 +41,7 @@ int main(int argc, char const *argv[])
 		perror("Error in server on semget\n");
 		exit(EXIT_FAILURE);
 	}
-	if(semctl(UR, 0, SETVAL, MAX_THREADS) < 0){
+	if(semctl(UR, 0, SETVAL, MAX_THREAD) < 0){
 		perror("Error in server on semctl(UR)");
 		exit(EXIT_FAILURE);
 	}

@@ -6,10 +6,21 @@
 // Simple response on OP_MSG_BODY
 #define SIMPLE_OK_RESPONSE
 
-extern int UR;
-extern int UW;
-extern const int MAX_THREADS;
-extern const char *users_filename;
+#define MAX_THREAD 1024
+
+// Initial Server Port number
+#define INITIAL_SERV_PORT 6990
+
+// Define the length of pending connection request
+#define MAX_BACKLOG 1024
+
+// Users file
+#define users_filename "users.list"
+
+// Semaphores
+int UW;	//Users Write 
+int UR;	//Users Read
+
 
 /*
 	DESCRIPTION:
