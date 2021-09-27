@@ -25,8 +25,6 @@
 
 #define fflush(stdin) while(getchar() != '\n');
 
-#define INITIAL_SERV_PORT 6990
-
 #define SIZEOF_CHAR 1
 #define SIZEOF_INT 4
 #define MAXSIZE_USERNAME 32
@@ -67,32 +65,32 @@ typedef struct operation {
 
 /*
 	DESCRIPTION:
-		Send two message:
+		Send a text message in two steps:
 		1. Pre-message:
-			4 byte of int uid, User ID
-			1 byte of char op, OPeration code
-			4 byte of int message_len, LENgth of the MESSAGE
+			4 byte of int uid, User ID of the sender
+			1 byte of char code, code of the operation
+			4 byte of int text_len, Length of the text to send
 
-		2. Actual message:
+		2. Actual text
 
 	RETURNS:
 		In case of success: the number of byte written
 		In case of error: -1, and print errno
 */
-int send_message_to(int sockfd, int uid, char op, char *message);
+int send_message_to(int sockfd, int uid, char code, char *text);
 int send_operation_to(int sockfd, operation op);
 
 /*
 	DESCRIPTION:
-		Receive from sockfd, both pre-message and message
-		Allocates space for message in recipient
+		Receive from sockfd, both pre-message and text
+		Allocates space for text in pointer *text
 
 	RETURNS:
 		In case of success: the number of byte read
 		In case of closed socket: 0
 		In case of error: -1, and print errno
 */
-int receive_message_from(int sockfd, int *uid, char *op, char **recipient);
+int receive_message_from(int sockfd, int *uid, char *code, char **text);
 int receive_operation_from(int sockfd, operation *op);
 
 

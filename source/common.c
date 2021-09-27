@@ -1,8 +1,8 @@
 #include "common.h"
 
-int send_message_to(int sockfd, int uid, char op, char *message){
-	int message_len, byte_written;
-	message_len = message == NULL ? 0 : strlen(message);
+int send_message_to(int sockfd, int uid, char code, char *text){
+	int text_len, byte_written;
+	text_len = text == NULL ? 0 : strlen(text);
 
 	// iovec used by writev
 	struct iovec iov[3];
@@ -10,10 +10,10 @@ int send_message_to(int sockfd, int uid, char op, char *message){
 	iov[0].iov_base = &uid;
 	iov[0].iov_len = SIZEOF_INT;
 
-	iov[1].iov_base = &op;
+	iov[1].iov_base = &code;
 	iov[1].iov_len = SIZEOF_CHAR;
 
-	iov[2].iov_base = &message_len;
+	iov[2].iov_base = &text_len;
 	iov[2].iov_len = SIZEOF_INT;
 
 	// Send pre-message:
@@ -28,18 +28,18 @@ int send_message_to(int sockfd, int uid, char op, char *message){
 	#endif
 
 	// If messagge == NULL, don't send second part
-	if(message == NULL)
+	if(text == NULL)
 		return 0;
 
-	// Send message
-	if((byte_written = write(sockfd, message, message_len)) 
-		!= message_len){
+	// Send text
+	if((byte_written = write(sockfd, text, text_len)) 
+		!= text_len){
 		perror("Error in send_message_to on write");
 		return -1;
 	}
 
 	#ifdef PRINT_DEBUG_FINE
-	printf("write has written %d bytes=%s\n", byte_written, message);
+	printf("write has written %d bytes=%s\n", byte_written, text);
 	#endif
 
 	return byte_written;
@@ -49,10 +49,10 @@ int send_operation_to(int sockfd, operation op){
 	return send_message_to(sockfd, op.uid, op.code, op.text);
 }
 
-int receive_message_from(int sockfd, int *uid, char *op, char **recipient){
-	int message_len;
+int receive_message_from(int sockfd, int *uid, char *code, char **text){
+	int text_len;
 	int null_uid;
-	char null_op;
+	char null_code;
 	int byte_read = 0;
 
 	struct iovec iov[3];
@@ -60,10 +60,10 @@ int receive_message_from(int sockfd, int *uid, char *op, char **recipient){
 	iov[0].iov_base = uid == NULL ? &null_uid : uid;
 	iov[0].iov_len = SIZEOF_INT;
 
-	iov[1].iov_base = op == NULL ? &null_op : op;
+	iov[1].iov_base = code == NULL ? &null_code : code;
 	iov[1].iov_len = SIZEOF_CHAR;
 
-	iov[2].iov_base = &message_len;
+	iov[2].iov_base = &text_len;
 	iov[2].iov_len = SIZEOF_INT;
 
 	if((byte_read = readv(sockfd, iov, 3)) <= 0){
@@ -72,28 +72,28 @@ int receive_message_from(int sockfd, int *uid, char *op, char **recipient){
 	}
 
 	#ifdef PRINT_DEBUG_FINE
-	printf("readv has read %d bytes, message_len=%d\n",
-		byte_read, message_len);
+	printf("readv has read %d bytes, text_len=%d\n",
+		byte_read, text_len);
 	#endif
 
-	// If message_len == 0 -> sender has not included message
-	// If recipient == NULL -> receiver is not interested
-	if(message_len == 0 || recipient == NULL){
-		*recipient = NULL;
+	// If text_len == 0 -> sender has not included message
+	// If text == NULL -> receiver is not interested
+	if(text_len == 0 || text == NULL){
+		*text = NULL;
 		return 0;
 	}
 
-	*recipient = calloc(sizeof(char), message_len + 1);
-	memset(*recipient, '\0', message_len + 1);
+	*text = calloc(sizeof(char), text_len + 1);
+	memset(*text, '\0', text_len + 1);
 
-	if((byte_read = read(sockfd, *recipient, message_len)) <= 0){
+	if((byte_read = read(sockfd, *text, text_len)) <= 0){
 		if(byte_read < 0) perror("Error in receive_message_from on readv");
 		return byte_read;
 	}
 
 	#ifdef PRINT_DEBUG_FINE
 	printf("read has read %d bytes, message=%s\n",
-		byte_read, *recipient);
+		byte_read, *text);
 	#endif
 
 	return byte_read;

@@ -1,10 +1,18 @@
 #include "common.h"
 #include "server-routines.h"
 
-#define SIMPLE_OK_RESPONSE
+// Initial Server Port number
+#define INITIAL_SERV_PORT 6990
 
 // Define the length of pending connection request
 #define MAX_BACKLOG 1024
+
+// Has to be less than SEMVMX 
+//	Maximum allowable value for semval: implementation dependent (32767).
+const int MAX_THREADS = 1024;
+
+// Users file
+const char *users_filename = "users.list";
 
 void sigint_handler(int signum);
 void *thread_communication_routine(void *arg);
@@ -16,13 +24,6 @@ struct thread_arg{
 	int acceptfd;
 	struct sockaddr_in *client_addr;
 };
-
-// Has to be less than SEMVMX 
-//	Maximum allowable value for semval: implementation dependent (32767).
-const int MAX_THREADS = 1024;
-
-// Users file
-const char *users_filename = "users.list";
 
 // sockfd is for the socket that accept connection, acceptfd is for the socket that does the communication
 int sockfd, acceptfd;

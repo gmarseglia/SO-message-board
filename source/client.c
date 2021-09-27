@@ -17,7 +17,7 @@ int main(int argc, const char *argv[]){
 	#ifdef DEBUG_SERVER
 	// DEBUG_SERVER 127.0.0.1:6990
 	ip_address = "127.0.0.1";
-	port = argc == 1 ? INITIAL_SERV_PORT : strtol(argv[1], NULL, 10);
+	port = argc == 1 ? 6990 : strtol(argv[1], NULL, 10);
 	
 	// Intended use
 	#else
