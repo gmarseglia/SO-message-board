@@ -19,9 +19,10 @@ int post(int sockfd, user_info client_ui){
 		if(tmp_body == NULL){
 			if(body_len == 0)
 				continue;
-			break;
+			else
+				break;
 		}
-		body_len = body_len + strlen(tmp_body) + 1;
+		body_len = body_len + strlen(tmp_body) + 1;	// +1 because of '\n'
 		body = reallocarray(body, sizeof(char), body_len + 1);
 		body[body_len] = '\0';
 		strcat(body, tmp_body);
@@ -29,9 +30,8 @@ int post(int sockfd, user_info client_ui){
 		free(tmp_body);
 	}
 
-	#ifdef PRINT_DEBUG_FINE
-	printf("-----------------\nSubject:\n%s\nBody:\n%s\n-----------------\n", subject, body);
-	#endif
+	printf("%s%s(%d) is sending: %s\n%s%s%s", SEP, client_ui.username, client_ui.uid, subject, 
+		SEP, body, SEP);
 
 	// #3: Send (UID, OP_MSG_SUBJECT, Subject)
 	if(send_message_to(sockfd, client_ui.uid, OP_MSG_SUBJECT, subject) < 0)

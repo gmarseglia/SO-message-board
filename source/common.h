@@ -64,6 +64,8 @@ typedef struct operation {
 	char *text;
 } operation;
 
+#define SEP "--------------------------------\n"
+
 /*
 	DESCRIPTION:
 		Send a text message in two steps:
