@@ -1,22 +1,26 @@
-server-source=common.c server.c server-log-reg.c
-client-source=common.c client.c client-log-reg.c client-post.c
-
+server-sources=common.c server.c server-log-reg.c
+server-headers=common.h server-routines.h
+# -------------------------------------------------------------
+client-sources=common.c client.c client-log-reg.c client-post.c
+client-headers=common.h client-routines.h
+# ---------------------------------------
 usrf='users.list'
+# ---------------
 
 all: init
 	@clear
-	gcc $(server-source) -o xserver -pthread -Werror=all -DPRINT_DEBUG
-	gcc $(client-source) -o xclient -pthread -Werror=all -DPRINT_DEBUG -DDEBUG_SERVER
+	gcc $(server-sources) -o xserver -pthread -Werror=all -DPRINT_DEBUG
+	gcc $(client-sources) -o xclient -pthread -Werror=all -DPRINT_DEBUG -DDEBUG_SERVER
 
 simple:
 	@clear
-	gcc $(server-source) -o xserver -pthread
-	gcc $(client-source) -o xclient -pthread
+	gcc $(server-sources) -o xserver -pthread
+	gcc $(client-sources) -o xclient -pthread
 
 fine: setup
 	@clear
-	gcc $(server-source) -o xserver -pthread -g -Werror=all -DPRINT_DEBUG -DPRINT_DEBUG_FINE
-	gcc $(client-source) -o xclient -pthread -g -Werror=all -DPRINT_DEBUG -DPRINT_DEBUG_FINE -DDEBUG_SERVER
+	gcc $(server-sources) -o xserver -pthread -g -Werror=all -DPRINT_DEBUG -DPRINT_DEBUG_FINE
+	gcc $(client-sources) -o xclient -pthread -g -Werror=all -DPRINT_DEBUG -DPRINT_DEBUG_FINE -DDEBUG_SERVER
 
 init:
 	echo '0000 anonymoususer0000000000000000000 00000000000000000000000000000000' > $(usrf)
@@ -26,11 +30,11 @@ init:
 clear:
 	rm -f xserver xclient $(usrf)
 
-subl-all:
-	subl Makefile common.h server* client*
+subl-all: subl-server subl-client
+	subl Makefile
 
 subl-server:
-	subl common.h server*
+	subl $(server-sources) $(server-headers)
 
 subl-client:
-	subl common.h client*
+	subl $(client-sources) $(client-headers)
