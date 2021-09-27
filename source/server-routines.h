@@ -15,7 +15,7 @@
 #define MAX_BACKLOG 1024
 
 // Users file
-#define users_filename "users.list"
+#define USERS_FILENAME "users.list"
 
 // Semaphores
 int UW;	//Users Write 

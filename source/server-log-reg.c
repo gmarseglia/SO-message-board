@@ -10,7 +10,7 @@ int login_registration(int acceptfd, user_info* client_ui){
 	char read_op;
 
 	// Open Users file
-	FILE *users_file = fopen(users_filename, "r+");
+	FILE *users_file = fopen(USERS_FILENAME, "r+");
 	if(users_file == NULL){
 		perror("Error in thread_communication_routine on fread_open");
 		exit(EXIT_FAILURE);

@@ -27,7 +27,7 @@ int main(int argc, char const *argv[])
 	system("hostname -I | awk \'{print $1}\'");
 
 	// Create the Users file
-	int usersfd = open(users_filename, O_RDWR);
+	int usersfd = open(USERS_FILENAME, O_RDWR);
 	if(usersfd < 0){
 		perror("Error in server on open users file");
 		exit(EXIT_FAILURE);
