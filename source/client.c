@@ -11,7 +11,7 @@ int main_cycle();
 int post();
 
 int sockfd;
-struct user_info user_info;
+user_info client_ui;
 struct sockaddr_in addr;
 
 int main(int argc, const char *argv[]){
@@ -46,7 +46,7 @@ int main(int argc, const char *argv[]){
 	signal(SIGINT, close_connenction_and_exit);
 
 	// Client needs to register or login before being able to send message
-	while(login_registration(&sockfd, &addr, &user_info) < 0);
+	while(login_registration(&sockfd, &addr, &client_ui) < 0);
 
 	// Main cycle
 	//	gets interrupted by SIGINT or errors
@@ -103,23 +103,22 @@ int post(){
 	#endif
 
 	// #3: Send (UID, OP_MSG_SUBJECT, Subject)
-	if(send_message_to(sockfd, user_info.uid, OP_MSG_SUBJECT, subject) < 0)
+	if(send_message_to(sockfd, client_ui.uid, OP_MSG_SUBJECT, subject) < 0)
 		return -1;
 
 	// #4: Send (UID, OP_MSG_BODY, Body)
-	if(send_message_to(sockfd, user_info.uid, OP_MSG_BODY, body) < 0)
+	if(send_message_to(sockfd, client_ui.uid, OP_MSG_BODY, body) < 0)
 		return -1;
 
 	// #5: Receive (UID_SERVER, OP_OK, ID of the message)
 	#ifdef WAIT_SERVER_OK
-	int read_uid;
-	char read_op, *recipient;
-	if(receive_message_from(sockfd, &read_uid, &read_op, &recipient) < 0 || read_uid != UID_SERVER){
+	operation op;
+	if(receive_operation_from(sockfd, &op) < 0 || op.uid != UID_SERVER){
 		fprintf(stderr, "Error in Post on receive_message_from\n");
 		exit(EXIT_FAILURE);
 	}
-	if(read_op != OP_OK){
-		fprintf(stderr, "Post refused: %s\n", recipient);
+	if(op.code != OP_OK){
+		fprintf(stderr, "Post refused: %s\n", op.text);
 	}
 	#endif
 

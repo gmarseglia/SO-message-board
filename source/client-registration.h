@@ -1,9 +1,7 @@
-int login_registration(int *sockfd, struct sockaddr_in *server_address, struct user_info *user_info);
-int login(int sockfd, struct user_info *user_info);
-int registration(int sockfd, struct user_info *user_info);
-void user_info_fill(struct user_info* user_info);
-
-char op;
+int login_registration(int *sockfd, struct sockaddr_in *server_address, user_info *client_ui);
+int login(int sockfd, user_info *client_ui);
+int registration(int sockfd, user_info *client_ui);
+void user_info_fill(user_info* client_ui);
 
 /*
 	DESCRIPTION:
@@ -13,7 +11,8 @@ char op;
 		Connect to server
 		Call function for login or register
 */
-int login_registration(int *sockfd, struct sockaddr_in *server_address, struct user_info *user_info){
+int login_registration(int *sockfd, struct sockaddr_in *server_address, user_info *client_ui){
+	char op;
 	while(1){
 		// 'R' or 'r' for registration, 'L' or 'l' for login
 		printf("\n(L)ogin or (R)egistration?\n");
@@ -25,7 +24,7 @@ int login_registration(int *sockfd, struct sockaddr_in *server_address, struct u
 	}
 
 	// Ask the user to type username and passwd
-	user_info_fill(user_info);
+	user_info_fill(client_ui);
 
 	// Create the socket
 	//	done here because on registration or login error, the socket gets closed
@@ -45,9 +44,9 @@ int login_registration(int *sockfd, struct sockaddr_in *server_address, struct u
 
 	// Call the function to register or to login
 	if(op == 'R'){
-		return registration(*sockfd, user_info);
+		return registration(*sockfd, client_ui);
 	} else if (op == 'L'){
-		return login(*sockfd, user_info);
+		return login(*sockfd, client_ui);
 	}
 
 	return -1;
@@ -62,29 +61,29 @@ int login_registration(int *sockfd, struct sockaddr_in *server_address, struct u
 		In case of success: 0
 		In case of error: -1
 */
-int registration(int sockfd, struct user_info *user_info){
-	char *container;
-	int read_uid;
+int registration(int sockfd, user_info *client_ui){
+	operation op;
 
-	if(send_message_to(sockfd, 0, OP_REG_USERNAME, user_info->username) < 0)
+	if(send_message_to(sockfd, 0, OP_REG_USERNAME, client_ui->username) < 0)
 		exit(EXIT_FAILURE);
 
-	if(send_message_to(sockfd, 0, OP_REG_PASSWD, user_info->passwd) < 0)
+	if(send_message_to(sockfd, 0, OP_REG_PASSWD, client_ui->passwd) < 0)
 		exit(EXIT_FAILURE);
 	
-	if(receive_message_from(sockfd, &read_uid, &op, &container) < 0)
+	if(receive_operation_from(sockfd, &op) < 0)
 		exit(EXIT_FAILURE);
 
-	if(read_uid == UID_SERVER && op == OP_REG_UID){
-		user_info->uid = strtol(container, NULL, 10);
+	if(op.uid == UID_SERVER && op.code == OP_REG_UID){
+		client_ui->uid = strtol(op.text, NULL, 10);
+		free(op.text);
 		printf("Registration successful.\n");
 		return 0;
-	} else if(read_uid == UID_SERVER && op == OP_NOT_ACCEPTED){
-		printf("Registration unsuccessful: %s\n", container);
+	} else if(op.uid == UID_SERVER && op.code == OP_NOT_ACCEPTED){
+		printf("Registration unsuccessful: %s\n", op.text);
 		if(close(sockfd) < 0) perror("Error in registration on close");
 		return -1;
 	} else {
-		fprintf(stderr, "Unexpected error during registration.\nUID=%d, op=%c\n", read_uid, op);
+		fprintf(stderr, "Unexpected error during registration.\nUID=%d, code=%c\n", op.uid, op.code);
 		exit(EXIT_FAILURE);
 	}
 }
@@ -99,29 +98,29 @@ int registration(int sockfd, struct user_info *user_info){
 		In case of unsuccess, retry possible: -1
 		In case of error: exit(EXIT_FAILURE)
 */
-int login(int sockfd, struct user_info *user_info){
-	char *container;
-	int read_uid;
+int login(int sockfd, user_info *client_ui){
+	operation op;
 
-	if(send_message_to(sockfd, 0, OP_LOG_USERNAME, user_info->username) < 0)
+	if(send_message_to(sockfd, UID_ANON, OP_LOG_USERNAME, client_ui->username) < 0)
 		exit(EXIT_FAILURE);
 
-	if(send_message_to(sockfd, 0, OP_LOG_PASSWD, user_info->passwd) < 0)
+	if(send_message_to(sockfd, UID_ANON, OP_LOG_PASSWD, client_ui->passwd) < 0)
 		exit(EXIT_FAILURE);
 	
-	if(receive_message_from(sockfd, &read_uid, &op, &container) < 0)
+	if(receive_operation_from(sockfd, &op) < 0)
 		exit(EXIT_FAILURE);
 
-	if(read_uid == UID_SERVER && op == OP_LOG_UID){
-		user_info->uid = strtol(container, NULL, 10);
+	if(op.uid == UID_SERVER && op.code == OP_LOG_UID){
+		client_ui->uid = strtol(op.text, NULL, 10);
+		free(op.text);
 		printf("Login successful.\n");
 		return 0;
-	} else if(read_uid == UID_SERVER && op == OP_NOT_ACCEPTED){
-		printf("Login unsuccessful: %s\n", container);
+	} else if(op.uid == UID_SERVER && op.code == OP_NOT_ACCEPTED){
+		printf("Login unsuccessful: %s\n", op.text);
 		if(close(sockfd) < 0) perror("Error in login on close");
 		return -1;
 	} else {
-		fprintf(stderr, "Unexpected error during login.\nUID=%d, op=%c\n", read_uid, op);
+		fprintf(stderr, "Unexpected error during login.\nUID=%d, code=%c\n", op.uid, op.code);
 		exit(EXIT_FAILURE);
 	}
 }
@@ -131,13 +130,13 @@ int login(int sockfd, struct user_info *user_info){
 		Ask the user to type username and password
 		Fill user_info
 */
-void user_info_fill(struct user_info* user_info){
+void user_info_fill(user_info* client_ui){
 	printf("Type username:\n");
 	do{
-		scanf("%ms", &(user_info->username));
-		if(user_info->username == NULL)
+		scanf("%ms", &(client_ui->username));
+		if(client_ui->username == NULL)
 			continue;
-		if(strlen(user_info->username) > MAXSIZE_USERNAME){
+		if(strlen(client_ui->username) > MAXSIZE_USERNAME){
 			printf("Username too long: max size is %d\n", MAXSIZE_USERNAME);
 			continue;
 		}
@@ -147,10 +146,10 @@ void user_info_fill(struct user_info* user_info){
 
 	printf("Type password:\n");
 	do{
-		scanf("%ms", &(user_info->passwd));
-		if(user_info->passwd == NULL)
+		scanf("%ms", &(client_ui->passwd));
+		if(client_ui->passwd == NULL)
 			continue;
-		if(strlen(user_info->passwd) > MAXSIZE_PASSWD){
+		if(strlen(client_ui->passwd) > MAXSIZE_PASSWD){
 			printf("Passord too long: max size is %d\n", MAXSIZE_PASSWD);
 			continue;
 		}

@@ -46,14 +46,23 @@
 #define UID_SERVER 1
 
 // Struct containing the user info
-struct user_info {
+typedef struct user_info {
 	char *username;
 	char *passwd;
 	int uid;
-};
+} user_info;
+
+// Struct to encapslute operations
+typedef struct operation {
+	int uid;
+	char code;
+	char *text;
+} operation;
 
 int send_message_to(int sockfd, int uid, char op, char *message);
 int receive_message_from(int sockfd, int *uid, char *op, char **recipient);
+int send_operation_to(int sockfd, operation op);
+int receive_operation_from(int sockfd, operation *op);
 
 /*
 	DESCRIPTION:
@@ -172,6 +181,14 @@ int receive_message_from(int sockfd, int *uid, char *op, char **recipient){
 	#endif
 
 	return byte_read;
+}
+
+int send_operation_to(int sockfd, operation op){
+	return send_message_to(sockfd, op.uid, op.code, op.text);
+}
+
+int receive_operation_from(int sockfd, operation *op){
+	return receive_message_from(sockfd, &(op->uid), &(op->code), &(op->text));
 }
 
 /*

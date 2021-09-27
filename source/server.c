@@ -169,9 +169,6 @@ void *thread_communication_routine(void *arg){
 		exit(EXIT_FAILURE);
 	}
 
-	char *recipient, op;
-	int uid;
-
 	printf("Thread[%d] accepted connection from %s:%d\n", id, str_client_addr, i_client_port);
 
 	// Start the login or registration phase, mandatory for every client
@@ -180,17 +177,19 @@ void *thread_communication_routine(void *arg){
 
 	// Main cycle
 	//	gets interrupted when receive_message_from returns 0, meaning that connection was closed by client
-	while(receive_message_from(acceptfd, &uid, &op, &recipient) > 0){
+	operation op;
+	while(receive_operation_from(acceptfd, &op) > 0){
 
 		printf("Thread[%d] received %c op from %d@%s:%d:\n%s\n",
-			id, op, uid, str_client_addr, i_client_port, recipient);
+			id, op.code, op.uid, str_client_addr, i_client_port, op.text);
 
-		free(recipient);
+		free(op.text);
 
 		#ifdef SIMPLE_OK_RESPONSE
-		printf("Simple ok response\n");
-		if(op == OP_MSG_BODY)
+		if(op.code == OP_MSG_BODY){
+			printf("Simple ok response\n");	
 			send_message_to(acceptfd, UID_SERVER, OP_OK, NULL);
+		}	
 		#endif
 
 	}
