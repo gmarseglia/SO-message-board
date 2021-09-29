@@ -188,6 +188,8 @@ int dispatcher(int acceptfd, user_info client_ui){
 	switch(op.code){
 		case OP_MSG_SUBJECT:
 			return save(acceptfd, &client_ui, &op);
+		case OP_READ_REQUEST:
+			return read_response(acceptfd, client_ui);
 		default:
 			printf("BEGIN%s\n(%s, %d) sent \'%c\' op:\n%s\n%sEND\n\n",
 			SEP, client_ui.username, client_ui.uid, op.code, op.text, SEP);
