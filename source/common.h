@@ -104,4 +104,6 @@ int receive_operation_from(int sockfd, operation *op);
 void sockaddr_in_setup_inaddr(struct sockaddr_in *addr, unsigned int ip_address, int port);
 void sockaddr_in_setup(struct sockaddr_in *addr, const char *ip_address, int port);
 
+char *int_to_string_stuffed(int base, int byte_len);
+
 #endif

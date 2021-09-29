@@ -14,12 +14,12 @@ all: init
 	gcc $(server-sources) -o $(rundir)xserver -pthread -Werror=all -g -DPRINT_DEBUG
 	gcc $(client-sources) -o $(rundir)xclient -pthread -Werror=all -g -DPRINT_DEBUG -DDEBUG_SERVER
 
-simple:
+simple: init
 	@clear
 	gcc $(server-sources) -o $(rundir)xserver -pthread
 	gcc $(client-sources) -o $(rundir)xclient -pthread
 
-fine: setup
+fine: init
 	@clear
 	gcc $(server-sources) -o $(rundir)xserver -pthread -g -Werror=all -DPRINT_DEBUG -DPRINT_DEBUG_FINE
 	gcc $(client-sources) -o $(rundir)xclient -pthread -g -Werror=all -DPRINT_DEBUG -DPRINT_DEBUG_FINE -DDEBUG_SERVER

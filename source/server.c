@@ -28,19 +28,20 @@ int main(int argc, char const *argv[])
 	system("hostname -I | awk \'{print $1}\'");
 
 	// Initialize Users file semaphores
-	UR = semget(IPC_PRIVATE, 1, IPC_CREAT | 0660);
-	UW = semget(IPC_PRIVATE, 1, IPC_CREAT | 0660);
-	if(UR == -1 || UW == -1){
-		perror("Error in server on semget\n");
-		exit(EXIT_FAILURE);
-	}
-	if(semctl(UR, 0, SETVAL, MAX_THREAD) < 0){
-		perror("Error in server on semctl(UR)");
-		exit(EXIT_FAILURE);
-	}
-	if(semctl(UW, 0, SETVAL, 1) < 0){
-		perror("Error in server on semctl(UW)");
-		exit(EXIT_FAILURE);
+	int *SEMAPHORES[4] = {&UR, &UW, &MR, &MW};
+	int SEMAPHORES_INIT_VALUE[4] = {MAX_THREAD, 1, MAX_THREAD, 1};
+
+	for(int i = 0; i < 4; i++){
+		*SEMAPHORES[i] = semget(IPC_PRIVATE, 1, IPC_CREAT | 0660);
+		if(*SEMAPHORES[i] == -1){
+			perror("Error in server on semget\n");
+			exit_failure();
+		}
+		if(semctl(*SEMAPHORES[i], 0, SETVAL, SEMAPHORES_INIT_VALUE[i]) < 0){
+			fprintf(stderr, "Semaphore %d\n", i);
+			perror("Error in server on semctl");
+			exit_failure();
+		}
 	}
 
 	// Create the socket for connection, use TCP
@@ -124,6 +125,10 @@ int main(int argc, char const *argv[])
 *	Close the connection socket
 */
 void sigint_handler(int signum){
+	semctl(UR, 0, IPC_RMID);
+	semctl(UW, 0, IPC_RMID);
+	semctl(MR, 0, IPC_RMID);
+	semctl(MW, 0, IPC_RMID);
 	if(close(sockfd) < 0) perror("Error in sigint_handler on close\n");
 	exit(1);
 }

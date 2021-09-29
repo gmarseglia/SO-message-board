@@ -19,13 +19,16 @@
 #define INDEX_FILENAME "index.list"
 #define FREE_AREAS_FILENAME "free-areas.list"
 
+#define INDEX_LINE_LEN 16 // 8 long offset + 4 int message_len + 4 int UID + 1 char '\n'
+
+#define SKIP_FREE_AREAS
+
 // Semaphores
 int UW;	//Users Write 
 int UR;	//Users Read
 
 int MW;	//Messages Write
 int MR; //Messages Read
-
 
 /*
 	DESCRIPTION:
