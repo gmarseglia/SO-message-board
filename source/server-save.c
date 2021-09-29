@@ -2,7 +2,7 @@
 
 int return_save(int return_value, FILE ***files, char ***buffers);
 
-int save(int acceptfd, user_info *client_ui, operation *op){
+int save(int acceptfd, user_info client_ui, operation *op){
 	char *subject = op->text, *body = NULL;
 	char **buffers[2] = {&subject, &body};
 
@@ -15,12 +15,12 @@ int save(int acceptfd, user_info *client_ui, operation *op){
 	int mid;
 	long index_file_len;
 
-	uint32_t message_len, uid = (uint32_t)client_ui->uid;
+	uint32_t message_len, uid = (uint32_t)client_ui.uid;
 	uint64_t message_offset;
 
 	// Check UID match
-	if(client_ui->uid != op->uid){
-		printf("client_ui->uid != op->uid, client_ui->uid=%d op->uid=%d\n", client_ui->uid, op->uid);
+	if(client_ui.uid != op->uid){
+		printf("client_ui.uid != op->uid, client_ui.uid=%d op->uid=%d\n", client_ui.uid, op->uid);
 		return -1;
 	}
 
@@ -33,7 +33,7 @@ int save(int acceptfd, user_info *client_ui, operation *op){
 
 	#ifdef PRINT_DEBUG
 	printf("BEGIN%s\n(%s, %d) sent:\n%s\n%s\n%s\n%s\n%sEND\n", SEP,
-		client_ui->username, client_ui->uid, SEP,
+		client_ui.username, client_ui.uid, SEP,
 		subject, SEP,
 		body, SEP);
 	#endif

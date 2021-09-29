@@ -49,8 +49,8 @@ int login_registration(int acceptfd, user_info *client_ui);
 		-1 in case of unsuccess
 		In case of error: exit_failure()
 */
-int save(int acceptfd, user_info *client_ui, operation *op);
+int save(int acceptfd, user_info client_ui, operation *op);
 
-int read_response(int acceptfd, user_info client_ui);
+int read_response(int acceptfd, user_info client_ui, operation *op);
 // --------------------------------------------------------
 #endif
