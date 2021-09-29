@@ -46,7 +46,7 @@ int main(int argc, const char *argv[]){
 	//	gets interrupted by SIGINT or errors
 	while(dispatcher() == 0);
 
-	return 0;
+	close_connenction_and_exit(0);
 }
 
 int dispatcher(){

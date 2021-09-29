@@ -125,7 +125,8 @@ int registration(FILE *users_file, int acceptfd, user_info *client_ui){
 	// #10b Send client OP_REG_UID with uid
 	char uid_str[6];
 	sprintf(uid_str, "%d", client_ui->uid);
-	send_message_to(acceptfd, UID_SERVER, OP_REG_UID, uid_str);
+	if(send_message_to(acceptfd, UID_SERVER, OP_REG_UID, uid_str) < 0)
+		return -1;
 
 	// 11b go to main cycle
 	return 0;
@@ -193,7 +194,8 @@ int login(FILE * users_file, int acceptfd, user_info *client_ui){
 	// #9: Send OP_LOG_UID with stored UID
 	char uid_str[6];
 	sprintf(uid_str, "%d", read_ui->uid);
-	send_message_to(acceptfd, UID_SERVER, OP_LOG_UID, uid_str);
+	if(send_message_to(acceptfd, UID_SERVER, OP_LOG_UID, uid_str) < 0)
+		return -1;
 	// Save UID in client_ui
 	client_ui->uid = read_ui->uid;
 

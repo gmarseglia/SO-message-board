@@ -20,7 +20,7 @@ int send_message_to(int sockfd, int uid, char code, char *text){
 	//	writev enables to send different arrays as one
 	if((byte_written = writev(sockfd, iov, 3)) < 0){
 		perror("Error in send_message_to on writev");
-		return -1;
+		return 0;
 	}
 
 	#ifdef PRINT_DEBUG_FINE
@@ -32,8 +32,7 @@ int send_message_to(int sockfd, int uid, char code, char *text){
 		return 0;
 
 	// Send text
-	if((byte_written = write(sockfd, text, text_len)) 
-		!= text_len){
+	if((byte_written = write(sockfd, text, text_len)) != text_len){
 		perror("Error in send_message_to on write");
 		return -1;
 	}
@@ -42,7 +41,7 @@ int send_message_to(int sockfd, int uid, char code, char *text){
 	printf("write has written %d bytes=%s\n", byte_written, text);
 	#endif
 
-	return byte_written;
+	return 0;
 }
 
 int send_operation_to(int sockfd, operation op){
@@ -68,7 +67,7 @@ int receive_message_from(int sockfd, int *uid, char *code, char **text){
 
 	if((byte_read = readv(sockfd, iov, 3)) <= 0){
 		if(byte_read < 0) perror("Error in receive_message_from on readv");
-		return byte_read;
+		return -1;
 	}
 
 	#ifdef PRINT_DEBUG_FINE
@@ -88,15 +87,14 @@ int receive_message_from(int sockfd, int *uid, char *code, char **text){
 
 	if((byte_read = read(sockfd, *text, text_len)) <= 0){
 		if(byte_read < 0) perror("Error in receive_message_from on readv");
-		return byte_read;
+		return -1;
 	}
 
 	#ifdef PRINT_DEBUG_FINE
-	printf("read has read %d bytes, message=%s\n",
-		byte_read, *text);
+	printf("read has read %d bytes, message=%s\n", byte_read, *text);
 	#endif
 
-	return byte_read;
+	return 0;
 }
 
 int receive_operation_from(int sockfd, operation *op){

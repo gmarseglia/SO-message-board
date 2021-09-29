@@ -58,27 +58,27 @@ int registration(int sockfd, user_info *client_ui){
 	operation op;
 
 	if(send_message_to(sockfd, 0, OP_REG_USERNAME, client_ui->username) < 0)
-		exit(EXIT_FAILURE);
+		return -1;
 
 	if(send_message_to(sockfd, 0, OP_REG_PASSWD, client_ui->passwd) < 0)
-		exit(EXIT_FAILURE);
+		return -1;
 	
 	if(receive_operation_from(sockfd, &op) < 0)
-		exit(EXIT_FAILURE);
+		return -1;
 
 	if(op.uid == UID_SERVER && op.code == OP_REG_UID){
 		client_ui->uid = strtol(op.text, NULL, 10);
 		free(op.text);
 		printf("Registration successful.\n");
 		return 0;
-	} else if(op.uid == UID_SERVER && op.code == OP_NOT_ACCEPTED){
+	}
+	if(op.uid == UID_SERVER && op.code == OP_NOT_ACCEPTED){
 		printf("Registration unsuccessful: %s\n", op.text);
-		if(close(sockfd) < 0) perror("Error in registration on close");
-		return -1;
 	} else {
 		fprintf(stderr, "Unexpected error during registration.\nUID=%d, code=%c\n", op.uid, op.code);
-		exit(EXIT_FAILURE);
 	}
+		if(close(sockfd) < 0) perror("Error in registration on close");
+		return -1;
 }
 
 /*
@@ -95,27 +95,28 @@ int login(int sockfd, user_info *client_ui){
 	operation op;
 
 	if(send_message_to(sockfd, UID_ANON, OP_LOG_USERNAME, client_ui->username) < 0)
-		exit(EXIT_FAILURE);
+		return -1;
 
 	if(send_message_to(sockfd, UID_ANON, OP_LOG_PASSWD, client_ui->passwd) < 0)
-		exit(EXIT_FAILURE);
+		return -1;
 	
 	if(receive_operation_from(sockfd, &op) < 0)
-		exit(EXIT_FAILURE);
+		return -1;
 
 	if(op.uid == UID_SERVER && op.code == OP_LOG_UID){
 		client_ui->uid = strtol(op.text, NULL, 10);
 		free(op.text);
 		printf("Login successful.\n");
 		return 0;
-	} else if(op.uid == UID_SERVER && op.code == OP_NOT_ACCEPTED){
+	}
+	
+	if(op.uid == UID_SERVER && op.code == OP_NOT_ACCEPTED){
 		printf("Login unsuccessful: %s\n", op.text);
-		if(close(sockfd) < 0) perror("Error in login on close");
-		return -1;
 	} else {
 		fprintf(stderr, "Unexpected error during login.\nUID=%d, code=%c\n", op.uid, op.code);
-		exit(EXIT_FAILURE);
 	}
+	if(close(sockfd) < 0) perror("Error in login on close");
+	return -1;
 }
 
 /*

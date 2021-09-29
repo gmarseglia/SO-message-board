@@ -77,8 +77,8 @@ typedef struct operation {
 		2. Actual text
 
 	RETURNS:
-		In case of success: the number of byte written
-		In case of error: -1, and print errno
+		0 in case of success
+		-1 in case of error or connection closed
 */
 int send_message_to(int sockfd, int uid, char code, char *text);
 int send_operation_to(int sockfd, operation op);
@@ -89,9 +89,8 @@ int send_operation_to(int sockfd, operation op);
 		Allocates space for text in pointer *text
 
 	RETURNS:
-		In case of success: the number of byte read
-		In case of closed socket: 0
-		In case of error: -1, and print errno
+		0 in case of success
+		-1 in case of error or connection closed
 */
 int receive_message_from(int sockfd, int *uid, char *code, char **text);
 int receive_operation_from(int sockfd, operation *op);

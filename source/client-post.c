@@ -35,28 +35,29 @@ int post(int sockfd, user_info client_ui){
 
 	// #3: Send (UID, OP_MSG_SUBJECT, Subject)
 	if(send_message_to(sockfd, client_ui.uid, OP_MSG_SUBJECT, subject) < 0)
-		exit_failure();
+		return -1;
 
 	// #4: Send (UID, OP_MSG_BODY, Body)
 	if(send_message_to(sockfd, client_ui.uid, OP_MSG_BODY, body) < 0)
-		exit_failure();
+		return -1;
 
 	// #5: Receive (UID_SERVER, OP_OK, ID of the message)
 	#ifdef WAIT_SERVER_OK
 	operation op;
 
 	if(receive_operation_from(sockfd, &op) < 0)
-		exit_failure();
+		return -1;
+
 	if(op.uid == UID_SERVER && op.code == OP_OK)
 		return 0;
-	else if(op.uid == UID_SERVER && op.code == OP_NOT_ACCEPTED){
+
+	free(op.text);
+	if(op.uid == UID_SERVER && op.code == OP_NOT_ACCEPTED){
 		printf("Post refused: %s\n", op.text);
-		free(op.text);
-		return -1;
 	} else {
 		fprintf(stderr, "Unknown error. Exiting.\n");
-		exit_failure();
 	}
+	return -1;
 	#endif
 
 	return 0;

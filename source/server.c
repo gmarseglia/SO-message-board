@@ -175,12 +175,10 @@ void *thread_communication_routine(void *arg){
 */ 
 int dispatcher(int acceptfd, user_info client_ui){
 	operation op;
-	int byte_read;
 
 	// Receive first operation
-	byte_read = receive_operation_from(acceptfd, &op);
-	if(byte_read == 0) return -1;
-	if(byte_read < 0) exit_failure();
+	if(receive_operation_from(acceptfd, &op) < 0)
+		return -1;
 
 	#ifdef PRINT_DEBUG_FINE
 	printf("BEGIN%s\n(%s, %d) sent \'%c\' op:\n%s\n%sEND\n\n",
@@ -196,7 +194,6 @@ int dispatcher(int acceptfd, user_info client_ui){
 			return 0;			
 	}
 }
-
 
 void *thread_close_connection(int id, int sockfd){
 	printf("Thread[%d]: closed connection.\n", id);
