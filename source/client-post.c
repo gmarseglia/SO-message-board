@@ -30,7 +30,7 @@ int post(int sockfd, user_info client_ui){
 		free(tmp_body);
 	}
 
-	printf("%s%s(%d) is sending: %s\n%s%s%s", SEP, client_ui.username, client_ui.uid, subject, 
+	printf("BEGIN%s\n%s(%d) is sending: %s\n%s\n%s\n%sEND\n", SEP, client_ui.username, client_ui.uid, subject, 
 		SEP, body, SEP);
 
 	// #3: Send (UID, OP_MSG_SUBJECT, Subject)

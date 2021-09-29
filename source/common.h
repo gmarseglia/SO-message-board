@@ -64,7 +64,7 @@ typedef struct operation {
 	char *text;
 } operation;
 
-#define SEP "--------------------------------\n"
+#define SEP "--------------------------------"
 
 /*
 	DESCRIPTION:

@@ -34,7 +34,7 @@ subl-all: subl-server subl-client
 	subl Makefile
 
 subl-server:
-	subl $(server-sources) $(server-headers)
+	subl $(server-headers) $(server-sources)
 
 subl-client:
-	subl $(client-sources) $(client-headers)
+	subl $(client-headers) $(client-sources)

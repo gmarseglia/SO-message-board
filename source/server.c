@@ -4,6 +4,7 @@
 void sigint_handler(int signum);
 void *thread_communication_routine(void *arg);
 void *thread_close_connection(int id, int sockfd);
+int dispatcher();
 
 // Struct for thread argument
 struct thread_arg{
@@ -155,33 +156,48 @@ void *thread_communication_routine(void *arg){
 	if(login_registration(acceptfd, &client_ui) < 0)
 		return thread_close_connection(id, acceptfd);
 
-	printf("Thread[%d]: %d,%s authenticated from %s:%d\n",
-		id, client_ui.uid, client_ui.username, str_client_addr, i_client_port);
+	printf("Thread[%d]: (%s, %d) authenticated from %s:%d\n",
+		id, client_ui.username, client_ui.uid, str_client_addr, i_client_port);
 
 	// Main cycle
 	//	gets interrupted when receive_message_from returns 0, meaning that connection was closed by client
-	operation op;
-	while(receive_operation_from(acceptfd, &op) > 0){
-
-		printf("Thread[%d] received %c op from %d@%s:%d:\n%s\n",
-			id, op.code, op.uid, str_client_addr, i_client_port, op.text);
-
-		free(op.text);
-
-		#ifdef SIMPLE_OK_RESPONSE
-		if(op.code == OP_MSG_BODY){
-			printf("Simple ok response\n");	
-			send_message_to(acceptfd, UID_SERVER, OP_OK, NULL);
-		}	
-		#endif
-
-	}
+	while(dispatcher(acceptfd, client_ui) > 0);
 
 	return thread_close_connection(id, acceptfd);
 }
 
+/*
+	RETURNS:
+		1 in case of success
+		0 in case of closed connection
+		exit_failure() in case of errors
+*/ 
+int dispatcher(int acceptdf, user_info client_ui){
+	operation op;
+	int byte_read;
+
+	// Receive first operation
+	byte_read = receive_operation_from(acceptfd, &op);
+	if(byte_read == 0) return 0;
+	if(byte_read < 0) exit_failure();
+
+	printf("BEGIN%s\n(%s, %d) sent \'%c\' op:\n%s\n%sEND\n\n",
+	SEP, client_ui.username, client_ui.uid, op.code, op.text, SEP);
+	
+	switch(op.code){
+		case OP_MSG_BODY:
+			printf("Simple ok response\n");	
+			send_message_to(acceptfd, UID_SERVER, OP_OK, NULL);
+			free(op.text);
+			return 1;
+		default:
+			return 1;			
+	}
+}
+
+
 void *thread_close_connection(int id, int sockfd){
-	printf("Thread[%d] has found closed connection.\n", id);
+	printf("Thread[%d]: found closed connection.\n", id);
 	if(close(acceptfd) < 0 && errno != EBADF) perror("Error in server on close accepted socket\n");
 	return NULL;
 }
