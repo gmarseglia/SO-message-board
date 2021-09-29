@@ -14,7 +14,7 @@ struct thread_arg{
 };
 
 // sockfd is for the socket that accept connection, acceptfd is for the socket that does the communication
-int sockfd, acceptfd;
+int sockfd;
 
 int main(int argc, char const *argv[])
 {
@@ -103,17 +103,21 @@ int main(int argc, char const *argv[])
 		}
 		client_addr_len = sizeof(struct sockaddr_in);
 
+		struct thread_arg *arg = malloc(sizeof(struct thread_arg));
+		if(arg == NULL){
+			fprintf(stderr, "Error in server main on malloc\n");
+			exit_failure();
+		}
+
 		// Accept a pending connection, blocking call
-		acceptfd = accept(sockfd, (struct sockaddr *)client_addr, &client_addr_len);
-		if(acceptfd < 0){
+		arg->acceptfd = accept(sockfd, (struct sockaddr *)client_addr, &client_addr_len);
+		if(arg->acceptfd < 0){
 			perror("Error in server on accept attempt.\n");
-			exit(EXIT_FAILURE);
+			exit_failure();
 		}
 
 		// Create a thread for handling the communication with client
-		struct thread_arg *arg = malloc(sizeof(struct thread_arg));
 		arg->id = tCount;
-		arg->acceptfd = acceptfd;
 		arg->client_addr = client_addr;
 		pthread_create(&tids[tCount], NULL, thread_communication_routine, (void *)arg);
 
@@ -200,6 +204,6 @@ int dispatcher(int acceptfd, user_info client_ui){
 
 void *thread_close_connection(int id, int sockfd){
 	printf("Thread[%d]: found closed connection.\n", id);
-	if(close(acceptfd) < 0 && errno != EBADF) perror("Error in server on close accepted socket\n");
+	if(close(sockfd) < 0 && errno != EBADF) perror("Error in server on close accepted socket\n");
 	return NULL;
 }
