@@ -5,6 +5,7 @@
 
 #define CLI_OP_POST 'P'
 #define CLI_OP_EXIT 'E'
+#define CLI_OP_READ 'R'
 
 #define WAIT_SERVER_OK
 
@@ -23,14 +24,8 @@
 */
 int login_registration(int *sockfd, struct sockaddr_in *server_address, user_info *client_ui);
 
-/*
-	DESCRIPTION:
-		Main while cycle
-		Ask users what they want to do
-		Call correct function
-*/
-// int dispatcher();
-
 int post(int sockfd, user_info client_ui);
+
+int save(int sockfd, user_info client_ui);
 
 #endif

@@ -191,7 +191,7 @@ int dispatcher(int acceptfd, user_info client_ui){
 		default:
 			printf("BEGIN%s\n(%s, %d) sent \'%c\' op:\n%s\n%sEND\n\n",
 			SEP, client_ui.username, client_ui.uid, op.code, op.text, SEP);
-			return 0;			
+			return send_message_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Incorrect OP");			
 	}
 }
 

@@ -35,6 +35,8 @@
 #define OP_MSG_SUBJECT 'm'
 #define OP_MSG_BODY 'M'
 // -----------------------
+#define OP_READ_REQUEST 'r'
+// -----------------------
 #define OP_REG_USERNAME 'u'
 #define OP_REG_PASSWD 'p'
 #define OP_REG_UID 'i'
@@ -103,6 +105,6 @@ int receive_operation_from(int sockfd, operation *op);
 void sockaddr_in_setup_inaddr(struct sockaddr_in *addr, unsigned int ip_address, int port);
 void sockaddr_in_setup(struct sockaddr_in *addr, const char *ip_address, int port);
 
-char *int_to_string_stuffed(int base, int byte_len);
+void print_operation(operation *op);
 
 #endif

@@ -112,3 +112,8 @@ void sockaddr_in_setup_inaddr(struct sockaddr_in *addr, unsigned int ip_address,
 void sockaddr_in_setup(struct sockaddr_in *addr, const char *ip_address, int port){
 	return sockaddr_in_setup_inaddr(addr, inet_addr(ip_address), port);
 }
+
+void print_operation(operation *op){
+	printf("(UID=%d, Code=%c, Text=%s)\n", op->uid, op->code, op->text);
+	return;
+}

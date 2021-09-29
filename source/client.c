@@ -52,13 +52,15 @@ int main(int argc, const char *argv[]){
 int dispatcher(){
 		char cli_op;
 		// Ask users what cli_op they want to do
-		printf("\nWhat do you want to do?\n(P)ost, (E)xit\n");
+		printf("\nWhat do you want to do?\n(P)ost, (R)ead, (E)xit\n");
 		scanf("%c", &cli_op);
 		fflush(stdin);
 
 		switch(cli_op){
 			case CLI_OP_POST:
 				return post(sockfd, client_ui);
+			case CLI_OP_READ:
+				return save(sockfd, client_ui);
 			case CLI_OP_EXIT:
 				close_connenction_and_exit(0);
 			default:
