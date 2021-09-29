@@ -10,6 +10,7 @@
 
 // Initial Server Port number
 #define INITIAL_SERV_PORT 6990
+#define INITIAL_UID 1000
 
 // Define the length of pending connection request
 #define MAX_BACKLOG 1024
@@ -17,9 +18,16 @@
 // Users file
 #define USERS_FILENAME "users.list"
 
+#define MESSAGES_FILENAME "messages.list"
+#define INDEX_FILENAME "index.list"
+#define FREE_AREAS_FILENAME "free-areas.list"
+
 // Semaphores
 int UW;	//Users Write 
 int UR;	//Users Read
+
+int MW;	//Messages Write
+int MR; //Messages Read
 
 
 /*

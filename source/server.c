@@ -27,14 +27,6 @@ int main(int argc, char const *argv[])
 	// Print the ip address in current network
 	system("hostname -I | awk \'{print $1}\'");
 
-	// Create the Users file
-	int usersfd = open(USERS_FILENAME, O_RDWR);
-	if(usersfd < 0){
-		perror("Error in server on open users file");
-		exit(EXIT_FAILURE);
-	}
-	if(close(usersfd) < 0) perror("Error in server on close users file");
-
 	// Initialize Users file semaphores
 	UR = semget(IPC_PRIVATE, 1, IPC_CREAT | 0660);
 	UW = semget(IPC_PRIVATE, 1, IPC_CREAT | 0660);
@@ -96,11 +88,11 @@ int main(int argc, char const *argv[])
 	while(1){
 		// Initialize the struct to contain the address of the client once connected
 		struct sockaddr_in *client_addr = malloc(sizeof(struct sockaddr_in));
-		memset(client_addr, '\0', sizeof(struct sockaddr_in));
 		if(client_addr == NULL){
 			perror("Error in server on main while malloc\n");
 			exit(EXIT_FAILURE);
 		}
+		memset(client_addr, '\0', sizeof(struct sockaddr_in));
 		client_addr_len = sizeof(struct sockaddr_in);
 
 		struct thread_arg *arg = malloc(sizeof(struct thread_arg));
@@ -163,6 +155,8 @@ void *thread_communication_routine(void *arg){
 	printf("Thread[%d]: (%s, %d) authenticated from %s:%d\n",
 		id, client_ui.username, client_ui.uid, str_client_addr, i_client_port);
 
+
+
 	// Main cycle
 	//	gets interrupted when receive_message_from returns 0, meaning that connection was closed by client
 	while(dispatcher(acceptfd, client_ui) > 0);
@@ -203,7 +197,7 @@ int dispatcher(int acceptfd, user_info client_ui){
 
 
 void *thread_close_connection(int id, int sockfd){
-	printf("Thread[%d]: found closed connection.\n", id);
+	printf("Thread[%d]: closed connection.\n", id);
 	if(close(sockfd) < 0 && errno != EBADF) perror("Error in server on close accepted socket\n");
 	return NULL;
 }

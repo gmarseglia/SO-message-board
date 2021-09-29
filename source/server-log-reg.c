@@ -10,7 +10,8 @@ int login_registration(int acceptfd, user_info* client_ui){
 	char read_op;
 
 	// Open Users file
-	FILE *users_file = fopen(USERS_FILENAME, "r+");
+
+	FILE *users_file = fdopen(open(USERS_FILENAME, O_CREAT|O_RDWR, 0660), "r+");
 	if(users_file == NULL){
 		perror("Error in thread_communication_routine on fread_open");
 		exit(EXIT_FAILURE);
@@ -83,14 +84,24 @@ int registration(FILE *users_file, int acceptfd, user_info *client_ui){
 	
 	// #6b Compute new UID
 	//	At the moment writes and reads are exclusive to this thread
-	int max_line_len = MAXSIZE_USERNAME + MAXSIZE_PASSWD + 5 + 3 + 1;
 	int last_uid;
-	char line_buffer[max_line_len + 1];
-	memset(line_buffer, '\0', max_line_len + 1);
+	int file_len;
+	fseek(users_file, 0, SEEK_END);
+	file_len = ftell(users_file);
 
-	fseek(users_file, -max_line_len, SEEK_END);
-	while(fgets(line_buffer, max_line_len, users_file) != NULL);
-	sscanf(line_buffer, "%d", &last_uid);
+	// Find last UID
+	if(file_len == 0){
+		last_uid = INITIAL_UID;
+	} else {
+		int max_line_len = MAXSIZE_USERNAME + MAXSIZE_PASSWD + 5 + 3 + 1;
+		char line_buffer[max_line_len + 1];
+		memset(line_buffer, '\0', max_line_len + 1);
+
+		fseek(users_file, file_len > max_line_len ? -max_line_len : -file_len, SEEK_END);
+		while(fgets(line_buffer, max_line_len, users_file) != NULL);
+		sscanf(line_buffer, "%d", &last_uid);
+	}
+
 	client_ui->uid = last_uid + 1;
 
 	#ifdef PRINT_DEBUG_FINE
