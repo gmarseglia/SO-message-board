@@ -172,7 +172,7 @@ void *thread_communication_routine(void *arg){
 		0 in case of closed connection
 		exit_failure() in case of errors
 */ 
-int dispatcher(int acceptdf, user_info client_ui){
+int dispatcher(int acceptfd, user_info client_ui){
 	operation op;
 	int byte_read;
 
@@ -181,8 +181,10 @@ int dispatcher(int acceptdf, user_info client_ui){
 	if(byte_read == 0) return 0;
 	if(byte_read < 0) exit_failure();
 
+	#ifdef PRINT_DEBUG
 	printf("BEGIN%s\n(%s, %d) sent \'%c\' op:\n%s\n%sEND\n\n",
 	SEP, client_ui.username, client_ui.uid, op.code, op.text, SEP);
+	#endif
 	
 	switch(op.code){
 		case OP_MSG_BODY:
