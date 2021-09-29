@@ -155,19 +155,17 @@ void *thread_communication_routine(void *arg){
 	printf("Thread[%d]: (%s, %d) authenticated from %s:%d\n",
 		id, client_ui.username, client_ui.uid, str_client_addr, i_client_port);
 
-
-
 	// Main cycle
 	//	gets interrupted when receive_message_from returns 0, meaning that connection was closed by client
-	while(dispatcher(acceptfd, client_ui) > 0);
+	while(dispatcher(acceptfd, client_ui) == 0);
 
 	return thread_close_connection(id, acceptfd);
 }
 
 /*
 	RETURNS:
-		1 in case of success
-		0 in case of closed connection
+		0 in case of success
+		-1 in case of closed connection
 		exit_failure() in case of errors
 */ 
 int dispatcher(int acceptfd, user_info client_ui){
@@ -176,22 +174,21 @@ int dispatcher(int acceptfd, user_info client_ui){
 
 	// Receive first operation
 	byte_read = receive_operation_from(acceptfd, &op);
-	if(byte_read == 0) return 0;
+	if(byte_read == 0) return -1;
 	if(byte_read < 0) exit_failure();
 
-	#ifdef PRINT_DEBUG
+	#ifdef PRINT_DEBUG_FINE
 	printf("BEGIN%s\n(%s, %d) sent \'%c\' op:\n%s\n%sEND\n\n",
 	SEP, client_ui.username, client_ui.uid, op.code, op.text, SEP);
 	#endif
 	
 	switch(op.code){
-		case OP_MSG_BODY:
-			printf("Simple ok response\n");	
-			send_message_to(acceptfd, UID_SERVER, OP_OK, NULL);
-			free(op.text);
-			return 1;
+		case OP_MSG_SUBJECT:
+			return save(acceptfd, &client_ui, &op);
 		default:
-			return 1;			
+			printf("BEGIN%s\n(%s, %d) sent \'%c\' op:\n%s\n%sEND\n\n",
+			SEP, client_ui.username, client_ui.uid, op.code, op.text, SEP);
+			return 0;			
 	}
 }
 

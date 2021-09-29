@@ -3,9 +3,6 @@
 // -------------------------------
 #include "common.h"
 
-// Simple response on OP_MSG_BODY
-#define SIMPLE_OK_RESPONSE
-
 #define MAX_THREAD 1024
 
 // Initial Server Port number
@@ -39,6 +36,16 @@ int MR; //Messages Read
 		In case of unsuccess, retry possible: -1
 		In case of error: exit(EXIT_FAILURE)
 */
-int login_registration(int acceptfd, user_info* client_ui);
+int login_registration(int acceptfd, user_info *client_ui);
+
+/*
+	DESCRIPTION:
+		Save the message received
+	RETURNS:
+		0 in case of success
+		-1 in case of unsuccess
+		In case of error: exit_failure()
+*/
+int save(int acceptfd, user_info *client_ui, operation *op);
 // --------------------------------------------------------
 #endif
