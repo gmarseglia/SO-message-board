@@ -36,6 +36,7 @@
 #define OP_MSG_BODY 'M'
 // -----------------------
 #define OP_READ_REQUEST 'r'
+#define OP_READ_RESPONSE 'R'
 // -----------------------
 #define OP_REG_USERNAME 'u'
 #define OP_REG_PASSWD 'p'
