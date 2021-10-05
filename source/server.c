@@ -15,6 +15,9 @@ struct thread_arg{
 // sockfd is for the socket that accept connection, acceptfd is for the socket that does the communication
 int sockfd;
 
+/*
+	Server Main
+*/
 int main(int argc, char const *argv[])
 {
 	pthread_t tids[MAX_BACKLOG];
@@ -121,7 +124,7 @@ int main(int argc, char const *argv[])
 }
 
 /*
-*	Close the connection socket
+	Close the connection socket
 */
 void sigint_handler(int signum){
 	semctl(UR, 0, IPC_RMID);
@@ -133,7 +136,7 @@ void sigint_handler(int signum){
 }
 
 /*
-*	Handles the communication with client
+	Handles the communication with client
 */
 void *thread_communication_routine(void *arg){
 	// Initialize local variables and free argument struct
@@ -196,6 +199,9 @@ int dispatcher(int acceptfd, user_info client_ui){
 	}
 }
 
+/*
+	Close communication with client
+*/
 void *thread_close_connection(int id, int sockfd){
 	printf("Thread[%d]: closed connection.\n", id);
 	if(close(sockfd) < 0 && errno != EBADF) perror("Error in server on close accepted socket\n");

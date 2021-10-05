@@ -4,7 +4,6 @@ int registration(FILE *users_file, int acceptfd, user_info *client_ui);
 int login(FILE *users_file, int acceptfd, user_info *client_ui);
 user_info *find_user(FILE *users_file, char *username);
 
-
 int login_registration(int acceptfd, user_info* client_ui){
 	int read_uid;
 	char read_op;
