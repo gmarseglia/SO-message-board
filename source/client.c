@@ -1,5 +1,4 @@
-#include "common.h"
-#include "client-routines.h"
+#include "client.h"
 
 void close_connenction_and_exit(int signum);
 int dispatcher();

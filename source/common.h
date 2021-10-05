@@ -28,9 +28,10 @@
 
 #define SIZEOF_CHAR 1
 #define SIZEOF_INT 4
+
+// Max sizes
 #define MAXSIZE_USERNAME 32
 #define MAXSIZE_PASSWD 32
-
 // OP codes
 #define OP_MSG_SUBJECT 'm'
 #define OP_MSG_BODY 'M'
@@ -78,6 +79,8 @@ typedef struct operation {
 			4 byte of int text_len, Length of the text to send
 
 		2. Actual text
+
+		Text can be NULL
 
 	RETURNS:
 		0 in case of success

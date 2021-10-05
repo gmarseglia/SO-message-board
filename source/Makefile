@@ -2,7 +2,7 @@ server-sources=common.c server.c server-log-reg.c server-save.c server-read-resp
 server-headers=common.h server-routines.h
 # -------------------------------------------------------------
 client-sources=common.c client.c client-log-reg.c client-post.c client.read-all.c
-client-headers=common.h client-routines.h
+client-headers=common.h client.h
 # ---------------------------------------
 rundir=runnable/
 # --------------

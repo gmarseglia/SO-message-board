@@ -3,10 +3,12 @@
 
 #include "common.h"
 
+// Client OP codes for the dispatcher
 #define CLI_OP_POST 'P'
 #define CLI_OP_EXIT 'E'
 #define CLI_OP_READ 'R'
 
+// Operational flags
 #define WAIT_SERVER_OK
 
 
