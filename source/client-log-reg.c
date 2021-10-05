@@ -1,8 +1,29 @@
 #include "client.h"
 
+/*
+	DESCRIPTION:
+		Attempt to login
+	RETURNS:
+		0 in case of success
+		-1 in case of error
+*/
 int login(int sockfd, user_info *client_ui);
+
+/*
+	DESCRIPTION:
+		Attempt to register
+	RETURNS:
+		0 in case of success
+		-1 in case of error
+*/
 int registration(int sockfd, user_info *client_ui);
+
+/*
+	DESCRIPTION:
+		Fill with username and password client_ui
+*/
 void user_info_fill(user_info* client_ui);
+// ---------------------------------------------------------------------------------------------
 
 int login_registration(int *sockfd, struct sockaddr_in *server_address, user_info *client_ui){
 	char op;

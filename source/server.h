@@ -43,7 +43,6 @@ int login_registration(int acceptfd, user_info *client_ui);
 	RETURNS:
 		0 in case of success
 		-1 in case of closed connection
-		exit_failure() in case of errors
 */ 
 int dispatcher(int acceptfd, user_info client_ui);
 

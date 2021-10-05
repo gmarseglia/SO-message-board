@@ -32,8 +32,10 @@ int post(int sockfd, user_info client_ui){
 		free(tmp_body);
 	}
 
+	#ifdef PRINT_DEBUG_FINE
 	printf("BEGIN%s\n%s(%d) is sending:\n%s\n%s\n%s\n%s\n%sEND\n", SEP, client_ui.username, client_ui.uid, SEP,
 		subject, SEP, body, SEP);
+	#endif
 
 	// #3: Send (UID, OP_MSG_SUBJECT, Subject)
 	if(send_message_to(sockfd, client_ui.uid, OP_MSG_SUBJECT, subject) < 0)
@@ -63,6 +65,8 @@ int post(int sockfd, user_info client_ui){
 	}
 	return -1;
 	#endif
+
+	printf("Message sent.\n");
 
 	return 0;
 }

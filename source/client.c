@@ -1,13 +1,17 @@
 #include "client.h"
 
+/*
+	DESCRIPTION:
+		Close the socket
+*/
 void close_connenction_and_exit(int signum);
-int dispatcher();
 
 int sockfd;
-user_info client_ui;
-struct sockaddr_in addr;
 
 int main(int argc, const char *argv[]){
+	user_info client_ui;
+	struct sockaddr_in addr;
+
 	const char *ip_address;
 	int port;
 
@@ -43,12 +47,20 @@ int main(int argc, const char *argv[]){
 
 	// Main cycle
 	//	gets interrupted by SIGINT or errors
-	while(dispatcher() == 0);
+	while(dispatcher(sockfd, client_ui) == 0);
 
 	close_connenction_and_exit(0);
 }
 
-int dispatcher(){
+void close_connenction_and_exit(int signum){
+	if(close(sockfd) < 0 && errno != EBADF) perror("Error in client on close.\n");
+	printf("Client has interrupted connection.\n");
+	exit(0);
+}
+
+// ---------------------------------------------
+// client.h operations
+int dispatcher(int sockfd, user_info client_ui){
 		char cli_op;
 		// Ask users what cli_op they want to do
 		printf("\nWhat do you want to do?\n(P)ost, (R)ead, (E)xit\n");
@@ -59,19 +71,11 @@ int dispatcher(){
 			case CLI_OP_POST:
 				return post(sockfd, client_ui);
 			case CLI_OP_READ:
-				return save(sockfd, client_ui);
+				return read_all(sockfd, client_ui);
 			case CLI_OP_EXIT:
 				close_connenction_and_exit(0);
 			default:
 				return 0;
 		}
 	}
-
-/*
-*	Close the socket
-*/
-void close_connenction_and_exit(int signum){
-	if(close(sockfd) < 0 && errno != EBADF) perror("Error in client on close.\n");
-	printf("Client has interrupted connection.\n");
-	exit(0);
-}
+// --------------------------------------------
