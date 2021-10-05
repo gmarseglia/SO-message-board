@@ -17,9 +17,10 @@ int read_all(int acceptfd, user_info client_ui, operation *op){
 	int mid, max_mid;
 	int send_success;
 
-	uint32_t message_len, uid;
+	uint32_t message_len, read_uid;
 	uint64_t message_offset;
 
+	char *username;
 	char *message_read, *text_to_send;
 	size_t text_to_send_len;
 
@@ -47,15 +48,15 @@ int read_all(int acceptfd, user_info client_ui, operation *op){
 	// #5: For cycle messages send
 	for(mid = 0; mid < max_mid; mid++){
 
-		// #5.1: Read from "Index file": (message_offset, message_len, uid)
+		// #5.1: Read from "Index file": (message_offset, message_len, read_uid)
 		fseek(index_file, mid * INDEX_LINE_LEN, SEEK_SET);
 		fread(&message_offset, 1, sizeof(uint64_t), index_file);
 		fread(&message_len, 1, sizeof(uint32_t), index_file);
-		fread(&uid, 1, sizeof(uint32_t), index_file);
+		fread(&read_uid, 1, sizeof(uint32_t), index_file);
 
 		#ifdef PRINT_DEBUG_FINE
-		printf("MID=%d, message_offset=%ld, message_len=%d, uid=%d\n",
-			mid, message_offset, message_len, uid);
+		printf("MID=%d, message_offset=%ld, message_len=%d, read_uid=%d\n",
+			mid, message_offset, message_len, read_uid);
 		#endif
 
 		// #5.2: Read from "Messages file" from message_offset Subject and Title
@@ -68,16 +69,21 @@ int read_all(int acceptfd, user_info client_ui, operation *op){
 		// Cut the second '\n' in body
 		message_read[message_len - 1] = '\0';
 
+		// #5.3: Convert UID into Username
+		user_info *read_ui = find_user_by_uid(read_uid);
+		username = (read_ui == NULL) ? "Not found" : read_ui->username;
+
 		// #5.4: Send (SERVER_UID, OP_READ_RESPONSE, MID + '\n' + Username + '\n' + Subject + '\n' + Body)
-		text_to_send_len = snprintf(NULL, 0, "%d\n%d\n%s", mid, uid, message_read);
+		text_to_send_len = snprintf(NULL, 0, "%d\n%s\n%s", mid, username, message_read);
 		text_to_send = calloc(sizeof(char), text_to_send_len + 1);
 		if(text_to_send == NULL)
 			return close_read_all(-1, files);
 
-		sprintf(text_to_send, "%d\n%d\n%s", mid, uid, message_read);
+		sprintf(text_to_send, "%d\n%s\n%s", mid, username, message_read);
 
 		send_success = send_message_to(acceptfd, UID_SERVER, OP_READ_RESPONSE, text_to_send);
 
+		free(read_ui);
 		free(message_read);
 		free(text_to_send);
 		if(send_success < 0)
