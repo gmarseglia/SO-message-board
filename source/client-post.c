@@ -12,6 +12,8 @@ int post(int sockfd, user_info client_ui){
 	} while (subject == NULL);
 
 	// #2: Ask to user the Body
+	body = malloc(sizeof(char));
+	body[0] = '\0';
 	printf("Insert the Body of the message, double new line to end:\n");
 	while(1){
 		scanf("%m[^\n]", &tmp_body);
@@ -36,10 +38,12 @@ int post(int sockfd, user_info client_ui){
 	// #3: Send (UID, OP_MSG_SUBJECT, Subject)
 	if(send_message_to(sockfd, client_ui.uid, OP_MSG_SUBJECT, subject) < 0)
 		return -1;
+	free(subject);
 
 	// #4: Send (UID, OP_MSG_BODY, Body)
 	if(send_message_to(sockfd, client_ui.uid, OP_MSG_BODY, body) < 0)
 		return -1;
+	free(body);
 
 	// #5: Receive (UID_SERVER, OP_OK, ID of the message)
 	#ifdef WAIT_SERVER_OK

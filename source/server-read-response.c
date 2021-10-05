@@ -3,8 +3,13 @@
 int close_and_return(int return_value, FILE ***files);
 
 int read_response(int acceptfd, user_info client_ui, operation *op){
+
+	#ifdef PRINT_DEBUG
 	printf("(%s, %d): read request.\n", client_ui.username, client_ui.uid);
+	#endif
+	#ifdef PRINT_DEBUG_FINEI
 	print_operation(op);
+	#endif
 
 	struct sembuf actual_sem_op = {.sem_flg = 0, .sem_num = 0};
 
@@ -16,7 +21,8 @@ int read_response(int acceptfd, user_info client_ui, operation *op){
 	uint32_t message_len, uid;
 	uint64_t message_offset;
 
-	char *buffer;
+	char *message_read, *text_to_send;
+	size_t text_to_send_len;
 
 	#ifdef PRINT_DEBUG_FINE
 	char *subject, *body;
@@ -48,10 +54,6 @@ int read_response(int acceptfd, user_info client_ui, operation *op){
 	fseek(index_file, 0, SEEK_END);
 	max_mid = ftell(index_file) / INDEX_LINE_LEN;
 
-	#ifdef PRINT_DEBUG_FINE
-	printf("max_mid=%d\n", max_mid);
-	#endif
-
 	// #5: For cycle messages send
 	for(mid = 0; mid < max_mid; mid++){
 		// #5.1: Read from "Index file": (message_offset, message_len, uid)
@@ -60,31 +62,41 @@ int read_response(int acceptfd, user_info client_ui, operation *op){
 		fread(&message_len, 1, sizeof(uint32_t), index_file);
 		fread(&uid, 1, sizeof(uint32_t), index_file);
 
+		#ifdef PRINT_DEBUG_FINE
 		printf("MID=%d, message_offset=%ld, message_len=%d, uid=%d\n",
 			mid, message_offset, message_len, uid);
+		#endif
 
 		// #5.2: Read from "Messages file" from message_offset Subject and Title
-		buffer = calloc(sizeof(char), message_len + 1);
-		if(buffer == NULL)
+		message_read = calloc(sizeof(char), message_len);
+		if(message_read == NULL)
 			return close_and_return(-1, files);
-		buffer[message_len] = '\0';
 
 		fseek(messages_file, message_offset, SEEK_SET);
-		fread(buffer, 1, message_len, messages_file);
+		fread(message_read, 1, message_len, messages_file);
+		message_read[message_len] = '\0';
 
 		#ifdef PRINT_DEBUG_FINE
-		subject = &buffer[0];
-		body = &buffer[strlen(subject) + 1];
+		subject = &message_read[0];
+		body = &message_read[strlen(subject) + 1];
 		printf("subject=%s\nbody=%s\n", subject, body);
 		#endif
 
-		// RESPONSE WITH UID OF THE POSTER
-		if(send_message_to(acceptfd, uid, OP_READ_RESPONSE, buffer) < 0)
+		text_to_send_len = snprintf(NULL, 0, "%d\n%d\n%s", mid, uid, message_read);
+		text_to_send = calloc(sizeof(char), text_to_send_len + 1);
+		if(text_to_send == NULL)
 			return close_and_return(-1, files);
 
-		free(buffer);
+		sprintf(text_to_send, "%d\n%d\n%s", mid, uid, message_read);
+
+		if(send_message_to(acceptfd, UID_SERVER, OP_READ_RESPONSE, text_to_send) < 0)
+			return close_and_return(-1, files);
+
+		free(message_read);
+		free(text_to_send);
 	}	
 
+	// #6: Send (UID_SERVER, OP_OK, NULL)
 	if(send_message_to(acceptfd, UID_SERVER, OP_OK, NULL) < 0)
 		return close_and_return(-1, files);
 
