@@ -26,6 +26,7 @@ int UR;	//Users Read
 int MW;	//Messages Write
 int MR; //Messages Read
 
+
 /*
 	DESCRIPTION:
 		Ask user R or L, for Registration or Login
@@ -45,7 +46,7 @@ int login_registration(int acceptfd, user_info *client_ui);
 		-1 in case of unsuccess
 		In case of error: exit_failure()
 */
-int save(int acceptfd, user_info client_ui, operation *op);
+int post(int acceptfd, user_info client_ui, operation *op);
 
 
 /*

@@ -117,3 +117,11 @@ void print_operation(operation *op){
 	printf("(UID=%d, Code=%c, Text=%s)\n", op->uid, op->code, op->text);
 	return;
 }
+
+void short_semop(int SEMAPHORE, int op){
+	struct sembuf actual_sem_op = {.sem_flg = 0, .sem_num = 0};
+	actual_sem_op.sem_op = op;
+	if(semop(SEMAPHORE, &actual_sem_op, 1) < 0)
+		exit_failure();
+	return;
+}

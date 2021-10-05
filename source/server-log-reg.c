@@ -40,7 +40,6 @@ int registration(FILE *users_file, int acceptfd, user_info *client_ui){
 	// Local variables declaration
 	int read_uid;
 	char read_op;
-	struct sembuf sem_op = {.sem_num = 0, .sem_flg = 0};
 	user_info *read_ui;
 
 	// #2 Receive passwd
@@ -53,25 +52,22 @@ int registration(FILE *users_file, int acceptfd, user_info *client_ui){
 		return -1;
 	}
 
-	// #3 Wait UW
-	sem_op.sem_op = -1;
-	semop(UW, &sem_op, 1);
+	// #3 Wait (UW, 1)
+	short_semop(UW, -1);
 
-	// #4 Wait UR N
-	sem_op.sem_op = -MAX_THREAD;
-	semop(UR, &sem_op, 1);
+	// #4 Wait (UR, MAX_THREAD)
+	short_semop(UR, -MAX_THREAD);
 
 	// #5 Find username
 	read_ui = find_user(users_file, client_ui->username);
 
+	// If username not found
 	if(read_ui != NULL){	
-		// #6a Signal UR N
-		sem_op.sem_op = MAX_THREAD;
-		semop(UR, &sem_op, 1);
+		// #6a Signal (UR, MAX_THREAD)
+		short_semop(UR, MAX_THREAD);
 
-		// #7a Signal UW
-		sem_op.sem_op = 1;
-		semop(UW, &sem_op, 1);
+		// #7a Signal (UW, 1)
+		short_semop(UW, 1);
 
 		// #8a Send OP_NOT_ACCEPTED to client
 		send_message_to(acceptfd, 1, OP_NOT_ACCEPTED, "Username already existing.");
@@ -80,8 +76,8 @@ int registration(FILE *users_file, int acceptfd, user_info *client_ui){
 		return -1;
 	}
 	
-	// #6b Compute new UID
 	//	At the moment writes and reads are exclusive to this thread
+	// #6b Compute new UID
 	int last_uid;
 	int file_len;
 	fseek(users_file, 0, SEEK_END);
@@ -112,13 +108,11 @@ int registration(FILE *users_file, int acceptfd, user_info *client_ui){
 		client_ui->uid, client_ui->username, client_ui->passwd);
 	fclose(users_file);
 
-	// #8b Signal UR, MAX_THREAD
-	sem_op.sem_op = MAX_THREAD;
-	semop(UR, &sem_op, 1);
+	// #8b Signal (UR, MAX_THREAD)
+	short_semop(UR, MAX_THREAD);
 
 	// #9b Signal UW
-	sem_op.sem_op = 1;
-	semop(UW, &sem_op, 1);
+	short_semop(UW, 1);
 
 	// #10b Send client OP_REG_UID with uid
 	char uid_str[6];
@@ -141,7 +135,6 @@ int registration(FILE *users_file, int acceptfd, user_info *client_ui){
 int login(FILE * users_file, int acceptfd, user_info *client_ui){
 	int read_uid;
 	char read_op;
-	struct sembuf sem_op = {.sem_num = 0, .sem_flg = 0};
 	user_info *read_ui;
 
 	// #1: Receive passwd
@@ -155,23 +148,19 @@ int login(FILE * users_file, int acceptfd, user_info *client_ui){
 	}
 
 	// #2: wait(UW, 1)
-	sem_op.sem_op = -1;
-	semop(UW, &sem_op, 1);
+	short_semop(UW, -1);
 
 	// #3: wait(UR, 1);
-	sem_op.sem_op = -1;
-	semop(UR, &sem_op, 1);
+	short_semop(UR, -1);
 
 	// #4: signal(UW, 1)
-	sem_op.sem_op = 1;
-	semop(UW, &sem_op, 1);
+	short_semop(UW, 1);
 
 	// #5: search for username and fill user info
 	read_ui = find_user(users_file, client_ui->username);
 
 	// #6: Signal (UR, 1)
-	sem_op.sem_op = 1;
-	semop(UR, &sem_op, 1);
+	short_semop(UR, 1);
 
 	// #7: Close users_file
 	fclose(users_file);

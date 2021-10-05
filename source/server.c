@@ -189,7 +189,7 @@ int dispatcher(int acceptfd, user_info client_ui){
 	
 	switch(op.code){
 		case OP_MSG_SUBJECT:
-			return save(acceptfd, client_ui, &op);
+			return post(acceptfd, client_ui, &op);
 		case OP_READ_REQUEST:
 			return read_response(acceptfd, client_ui, &op);
 		default:

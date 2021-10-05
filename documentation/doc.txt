@@ -20,3 +20,6 @@ Source vs headers:
 	https://stackoverflow.com/questions/18777326/compiling-multiple-c-files-with-gcc
 	https://stackoverflow.com/questions/3041797/how-to-use-a-defined-struct-from-another-source-file
 
+Snprintf:
+	https://stackoverflow.com/questions/3774417/sprintf-with-automatic-memory-allocation
+
