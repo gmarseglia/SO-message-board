@@ -63,7 +63,7 @@ void close_connenction_and_exit(int signum){
 int dispatcher(int sockfd, user_info client_ui){
 		char cli_op;
 		// Ask users what cli_op they want to do
-		printf("\nWhat do you want to do?\n(P)ost, (R)ead, (E)xit\n");
+		printf("\nWhat do you want to do?\n(P)ost, (R)ead, (D)elete, (E)xit\n");
 		scanf("%c", &cli_op);
 		fflush(stdin);
 
@@ -72,6 +72,8 @@ int dispatcher(int sockfd, user_info client_ui){
 				return post(sockfd, client_ui);
 			case CLI_OP_READ:
 				return read_all(sockfd, client_ui);
+			case CLI_OP_DELETE:
+				return delete_post(sockfd, client_ui);
 			case CLI_OP_EXIT:
 				close_connenction_and_exit(0);
 			default:

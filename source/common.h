@@ -39,6 +39,8 @@
 #define OP_READ_REQUEST 'r'
 #define OP_READ_RESPONSE 'R'
 // -----------------------
+#define OP_DELETE_REQUEST 'd'
+// -----------------------
 #define OP_REG_USERNAME 'u'
 #define OP_REG_PASSWD 'p'
 #define OP_REG_UID 'i'

@@ -54,8 +54,11 @@ int post(int sockfd, user_info client_ui){
 	if(receive_operation_from(sockfd, &op) < 0)
 		return -1;
 
-	if(op.uid == UID_SERVER && op.code == OP_OK)
+	if(op.uid == UID_SERVER && op.code == OP_OK){
+		printf("Post #%s sent.\n\n", op.text);
+		free(op.text);
 		return 0;
+	}
 
 	free(op.text);
 	if(op.uid == UID_SERVER && op.code == OP_NOT_ACCEPTED){

@@ -7,6 +7,7 @@
 #define CLI_OP_POST 'P'
 #define CLI_OP_EXIT 'E'
 #define CLI_OP_READ 'R'
+#define CLI_OP_DELETE 'D'
 
 // Operational flags
 #define WAIT_SERVER_OK
@@ -53,5 +54,14 @@ int post(int sockfd, user_info client_ui);
 		-1 in case of error
 */
 int read_all(int sockfd, user_info client_ui);
+
+/*
+	DESCRIPTION:
+		Ask the server to delete a post
+	RETURNS_
+		0 in case of success
+		-1 in case of error
+*/
+int delete_post(int sockfd, user_info client_ui);
 
 #endif
