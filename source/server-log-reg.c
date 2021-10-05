@@ -12,7 +12,7 @@ int login_registration(int acceptfd, user_info* client_ui){
 	// Open Users file
 	FILE *users_file = fdopen(open(USERS_FILENAME, O_CREAT|O_RDWR, 0660), "r+");
 	if(users_file == NULL){
-		perror("Error in thread_communication_routine on fread_open");
+		perror("Error in thread_communication_routine on fdopen");
 		exit(EXIT_FAILURE);
 	}
 
