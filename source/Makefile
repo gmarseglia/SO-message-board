@@ -1,32 +1,42 @@
-ser='server'
-ser-reg='server-registration'
-cli='client'
-cli-reg='client-registration'
-cmn='common-header'
-usrf='users.list'
+server-sources=common.c server.c server-log-reg.c server-post.c server-read.c
+server-headers=common.h server.h
+# -------------------------------------------------------------
+client-sources=common.c client.c client-log-reg.c client-post.c client-read.c client-delete.c
+client-headers=common.h client.h
+# ---------------------------------------
+rundir=runnable/
+# --------------
+usrf=$(rundir)users.list
+msgf=$(rundir)index.list $(rundir)messages.list $(rundir)free-areas.list
 
-all: setup
+all: init
 	@clear
-	gcc $(ser).c -o x$(ser) -g -pthread -Werror=all -DPRINT_DEBUG
-	gcc $(cli).c -o x$(cli) -g -pthread -Werror=all -DPRINT_DEBUG -DDEBUG_SERVER
+	gcc $(server-sources) -o $(rundir)xserver -pthread -Werror=all -g -DPRINT_DEBUG
+	gcc $(client-sources) -o $(rundir)xclient -pthread -Werror=all -g -DPRINT_DEBUG -DDEBUG_SERVER
 
-simple:
+simple: init
 	@clear
-	gcc $(ser).c -o x$(ser) -pthread
-	gcc $(cli).c -o x$(cli) -pthread
+	gcc $(server-sources) -o $(rundir)xserver -pthread
+	gcc $(client-sources) -o $(rundir)xclient -pthread
 
-fine: setup
+fine: init
 	@clear
-	gcc $(ser).c -o x$(ser) -g -pthread -Werror=all -DPRINT_DEBUG -DPRINT_DEBUG_FINE
-	gcc $(cli).c -o x$(cli) -g -pthread -Werror=all -DPRINT_DEBUG -DPRINT_DEBUG_FINE -DDEBUG_SERVER
+	gcc $(server-sources) -o $(rundir)xserver -pthread -g -Werror=all -DPRINT_DEBUG -DPRINT_DEBUG_FINE
+	gcc $(client-sources) -o $(rundir)xclient -pthread -g -Werror=all -DPRINT_DEBUG -DPRINT_DEBUG_FINE -DDEBUG_SERVER
 
-setup:
-	echo '0000 anonymoususer0000000000000000000 00000000000000000000000000000000' > $(usrf)
-	echo '0001 server00000000000000000000000000 00000000000000000000000000000000' >> $(usrf)
-	echo '1000 startpointavaibleuserid000000000 00000000000000000000000000000000' >> $(usrf)
+init:
+	if [ ! -d $(rundir) ]; then mkdir $(rundir); fi
 
 clear:
-	rm -f x$(ser) x$(cli) $(usrf)
+	rm -f $(rundir)xserver $(rundir)xclient $(usrf) $(msgf)
+	if [ -d $(rundir) ]; then rmdir $(rundir); fi
+	clear
 
-subl:
-	subl Makefile $(ser).c $(cli).c $(cmn).h $(cli-reg).h $(ser-reg).h
+subl-all: subl-server subl-client
+	subl Makefile
+
+subl-server:
+	subl $(server-headers) $(server-sources)
+
+subl-client:
+	subl $(client-headers) $(client-sources)

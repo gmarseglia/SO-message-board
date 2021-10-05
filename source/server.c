@@ -1,8 +1,4 @@
-#include "common-header.h"
-#include "server-registration.h"
-
-// Define the length of pending connection request
-#define MAX_BACKLOG 1024
+#include "server.h"
 
 void sigint_handler(int signum);
 void *thread_communication_routine(void *arg);
@@ -15,22 +11,13 @@ struct thread_arg{
 	struct sockaddr_in *client_addr;
 };
 
-// Has to be less than SEMVMX 
-//	Maximum allowable value for semval: implementation dependent (32767).
-const int MAX_THREADS = 1024;
-
-// Users file
-const char *users_filename = "users.list";
-
 // sockfd is for the socket that accept connection, acceptfd is for the socket that does the communication
-int sockfd, acceptfd;
+int sockfd;
 
-// Semaphores
-int UW;	//Users Write 
-int UR;	//Users Read
-
-int main(int argc, char const *argv[])
-{
+/*
+	Server Main
+*/
+int main(int argc, char const *argv[]){
 	pthread_t tids[MAX_BACKLOG];
 	int serv_port = INITIAL_SERV_PORT;
 	int tCount = 0;
@@ -40,28 +27,21 @@ int main(int argc, char const *argv[])
 	// Print the ip address in current network
 	system("hostname -I | awk \'{print $1}\'");
 
-	// Create the Users file
-	int usersfd = open(users_filename, O_RDWR);
-	if(usersfd < 0){
-		perror("Error in server on open users file");
-		exit(EXIT_FAILURE);
-	}
-	if(close(usersfd) < 0) perror("Error in server on close users file");
-
 	// Initialize Users file semaphores
-	UR = semget(IPC_PRIVATE, 1, IPC_CREAT | 0660);
-	UW = semget(IPC_PRIVATE, 1, IPC_CREAT | 0660);
-	if(UR == -1 || UW == -1){
-		perror("Error in server on semget\n");
-		exit(EXIT_FAILURE);
-	}
-	if(semctl(UR, 0, SETVAL, MAX_THREADS) < 0){
-		perror("Error in server on semctl(UR)");
-		exit(EXIT_FAILURE);
-	}
-	if(semctl(UW, 0, SETVAL, 1) < 0){
-		perror("Error in server on semctl(UW)");
-		exit(EXIT_FAILURE);
+	int *SEMAPHORES[4] = {&UR, &UW, &MR, &MW};
+	int SEMAPHORES_INIT_VALUE[4] = {MAX_THREAD, 1, MAX_THREAD, 1};
+
+	for(int i = 0; i < 4; i++){
+		*SEMAPHORES[i] = semget(IPC_PRIVATE, 1, IPC_CREAT | 0660);
+		if(*SEMAPHORES[i] == -1){
+			perror("Error in server on semget\n");
+			exit_failure();
+		}
+		if(semctl(*SEMAPHORES[i], 0, SETVAL, SEMAPHORES_INIT_VALUE[i]) < 0){
+			fprintf(stderr, "Semaphore %d\n", i);
+			perror("Error in server on semctl");
+			exit_failure();
+		}
 	}
 
 	// Create the socket for connection, use TCP
@@ -109,24 +89,28 @@ int main(int argc, char const *argv[])
 	while(1){
 		// Initialize the struct to contain the address of the client once connected
 		struct sockaddr_in *client_addr = malloc(sizeof(struct sockaddr_in));
-		memset(client_addr, '\0', sizeof(struct sockaddr_in));
 		if(client_addr == NULL){
 			perror("Error in server on main while malloc\n");
 			exit(EXIT_FAILURE);
 		}
+		memset(client_addr, '\0', sizeof(struct sockaddr_in));
 		client_addr_len = sizeof(struct sockaddr_in);
 
+		struct thread_arg *arg = malloc(sizeof(struct thread_arg));
+		if(arg == NULL){
+			fprintf(stderr, "Error in server main on malloc\n");
+			exit_failure();
+		}
+
 		// Accept a pending connection, blocking call
-		acceptfd = accept(sockfd, (struct sockaddr *)client_addr, &client_addr_len);
-		if(acceptfd < 0){
+		arg->acceptfd = accept(sockfd, (struct sockaddr *)client_addr, &client_addr_len);
+		if(arg->acceptfd < 0){
 			perror("Error in server on accept attempt.\n");
-			exit(EXIT_FAILURE);
+			exit_failure();
 		}
 
 		// Create a thread for handling the communication with client
-		struct thread_arg *arg = malloc(sizeof(struct thread_arg));
 		arg->id = tCount;
-		arg->acceptfd = acceptfd;
 		arg->client_addr = client_addr;
 		pthread_create(&tids[tCount], NULL, thread_communication_routine, (void *)arg);
 
@@ -138,15 +122,19 @@ int main(int argc, char const *argv[])
 }
 
 /*
-*	Close the connection socket
+	Close the connection socket
 */
 void sigint_handler(int signum){
+	semctl(UR, 0, IPC_RMID);
+	semctl(UW, 0, IPC_RMID);
+	semctl(MR, 0, IPC_RMID);
+	semctl(MW, 0, IPC_RMID);
 	if(close(sockfd) < 0) perror("Error in sigint_handler on close\n");
 	exit(1);
 }
 
 /*
-*	Handles the communication with client
+	Handles the communication with client
 */
 void *thread_communication_routine(void *arg){
 	// Initialize local variables and free argument struct
@@ -161,36 +149,111 @@ void *thread_communication_routine(void *arg){
 	free(client_addr);
 	free(arg);
 
-	struct user_info *user_info = malloc(sizeof(struct user_info));
-	if(user_info == NULL){
-		perror("Error in thread_communication_routine on malloc");
-		exit(EXIT_FAILURE);
-	}
+	user_info client_ui;
 
-	char *recipient, op;
-	int uid;
-
-	printf("Thread[%d] accepted connection from %s:%d\n", id, str_client_addr, i_client_port);
+	printf("Thread[%d]: accepted connection from %s:%d\n", id, str_client_addr, i_client_port);
 
 	// Start the login or registration phase, mandatory for every client
-	if(login_registration(acceptfd, user_info) < 0)
+	if(login_registration(acceptfd, &client_ui) < 0)
 		return thread_close_connection(id, acceptfd);
+
+	printf("Thread[%d]: (%s, %d) authenticated from %s:%d\n",
+		id, client_ui.username, client_ui.uid, str_client_addr, i_client_port);
 
 	// Main cycle
 	//	gets interrupted when receive_message_from returns 0, meaning that connection was closed by client
-	while(receive_message_from(acceptfd, &uid, &op, &recipient) > 0){
-
-		printf("Thread[%d] received %c op from %d@%s:%d:\n%s\n",
-			id, op, uid, str_client_addr, i_client_port, recipient);
-
-		free(recipient);
-	}
+	while(dispatcher(acceptfd, client_ui) == 0);
 
 	return thread_close_connection(id, acceptfd);
 }
 
+/*
+	Close communication with client
+*/
 void *thread_close_connection(int id, int sockfd){
-	printf("Thread[%d] has found closed connection.\n", id);
-	if(close(acceptfd) < 0 && errno != EBADF) perror("Error in server on close accepted socket\n");
+	printf("Thread[%d]: closed connection.\n", id);
+	if(close(sockfd) < 0 && errno != EBADF) perror("Error in server on close accepted socket\n");
 	return NULL;
 }
+
+// -------------------------------------------------
+// server.h operations
+int dispatcher(int acceptfd, user_info client_ui){
+	operation op;
+
+	// Receive first operation
+	if(receive_operation_from(acceptfd, &op) < 0)
+		return -1;
+
+	#ifdef PRINT_DEBUG_FINE
+	printf("BEGIN%s\n(%s, %d) sent \'%c\' op:\n%s\n%sEND\n\n",
+	SEP, client_ui.username, client_ui.uid, op.code, op.text, SEP);
+	#endif
+	
+	switch(op.code){
+		case OP_MSG_SUBJECT:
+			return post(acceptfd, client_ui, &op);
+		case OP_READ_REQUEST:
+			return read_all(acceptfd, client_ui, &op);
+		case OP_DELETE_REQUEST:
+			send_message_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Delete not possible.");
+			return 0;
+		default:
+			printf("BEGIN%s\n(%s, %d) sent \'%c\' op:\n%s\n%sEND\n\n",
+			SEP, client_ui.username, client_ui.uid, op.code, op.text, SEP);
+			return send_message_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Incorrect OP");			
+	}
+}
+
+user_info *find_user_by_username(char *username){
+	// Open Users file
+	FILE *users_file = fdopen(open(USERS_FILENAME, O_CREAT|O_RDWR, 0660), "r+");
+	if(users_file == NULL){
+		perror("Error in thread_communication_routine on fdopen");
+		exit(EXIT_FAILURE);
+	}
+
+	user_info *read_ui = malloc(sizeof(user_info));
+	if(read_ui == NULL){
+		fprintf(stderr, "Error in find_user on malloc\n");
+		exit_failure();
+	}
+
+	while(fscanf(users_file, "%d %ms %ms", &(read_ui->uid), &(read_ui->username), &(read_ui->passwd)) != EOF){
+		if(strcmp(username ,read_ui->username) == 0){
+			fclose(users_file);
+			return read_ui;
+		}
+	}
+
+	free(read_ui);
+	fclose(users_file);
+	return NULL;
+}
+
+user_info *find_user_by_uid(int uid){
+	// Open Users file
+	FILE *users_file = fdopen(open(USERS_FILENAME, O_CREAT|O_RDWR, 0660), "r+");
+	if(users_file == NULL){
+		perror("Error in thread_communication_routine on fdopen");
+		exit_failure();
+	}
+
+	user_info *read_ui = malloc(sizeof(user_info));
+	if(read_ui == NULL){
+		fprintf(stderr, "Error in find_user on malloc\n");
+		exit_failure();
+	}
+
+	while(fscanf(users_file, "%d %ms %ms", &(read_ui->uid), &(read_ui->username), &(read_ui->passwd)) != EOF){
+		if(read_ui->uid == uid){
+			fclose(users_file);
+			return read_ui;
+		}
+	}
+
+	free(read_ui);
+	fclose(users_file);
+	return NULL;
+}
+// -------------------------------------------------

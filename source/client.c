@@ -1,24 +1,26 @@
-#include "common-header.h"
-#include "client-registration.h"
+#include "client.h"
 
-void sigint_handler(int signum);
+/*
+	DESCRIPTION:
+		Close the socket
+*/
+void close_connenction_and_exit(int signum);
 
 int sockfd;
-struct user_info user_info;
 
 int main(int argc, const char *argv[]){
-	char *buffer;
+	user_info client_ui;
+	struct sockaddr_in addr;
+
 	const char *ip_address;
 	int port;
 
 	printf("Client active.\n");
 
-	struct sockaddr_in addr;
-
 	#ifdef DEBUG_SERVER
 	// DEBUG_SERVER 127.0.0.1:6990
 	ip_address = "127.0.0.1";
-	port = argc == 1 ? INITIAL_SERV_PORT : strtol(argv[1], NULL, 10);
+	port = argc == 1 ? 6990 : strtol(argv[1], NULL, 10);
 	
 	// Intended use
 	#else
@@ -38,36 +40,44 @@ int main(int argc, const char *argv[]){
 	printf("Server address is %s:%d\n",
 		inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 
+	signal(SIGINT, close_connenction_and_exit);
+
 	// Client needs to register or login before being able to send message
-	while(login_registration(&sockfd, &addr, &user_info) < 0);
+	while(login_registration(&sockfd, &addr, &client_ui) < 0);
 
 	// Main cycle
 	//	gets interrupted by SIGINT or errors
-	while(1){
-			// Scanf an entire line with memory modifier m, continue only if characters were typed
-			printf("Insert message:\n");
-			do {
-				scanf("%m[^\n]", &buffer);
-				fflush(stdin);
-			} while (buffer == NULL);
+	while(dispatcher(sockfd, client_ui) == 0);
 
-			// Send message to server
-			if(send_message_to(sockfd, user_info.uid, OP_MESSAGE, buffer) < 0){
-				exit(EXIT_FAILURE);
-			}
-
-			// Free the buffer allocated by scanf
-			free(buffer);
-		}
-
-	return 0;
+	close_connenction_and_exit(0);
 }
 
-/*
-*	Close the socket
-*/
-void sigint_handler(int signum){
+void close_connenction_and_exit(int signum){
 	if(close(sockfd) < 0 && errno != EBADF) perror("Error in client on close.\n");
 	printf("Client has interrupted connection.\n");
 	exit(0);
 }
+
+// ---------------------------------------------
+// client.h operations
+int dispatcher(int sockfd, user_info client_ui){
+		char cli_op;
+		// Ask users what cli_op they want to do
+		printf("\nWhat do you want to do?\n(P)ost, (R)ead, (D)elete, (E)xit\n");
+		scanf("%c", &cli_op);
+		fflush(stdin);
+
+		switch(cli_op){
+			case CLI_OP_POST:
+				return post(sockfd, client_ui);
+			case CLI_OP_READ:
+				return read_all(sockfd, client_ui);
+			case CLI_OP_DELETE:
+				return delete_post(sockfd, client_ui);
+			case CLI_OP_EXIT:
+				close_connenction_and_exit(0);
+			default:
+				return 0;
+		}
+	}
+// --------------------------------------------
