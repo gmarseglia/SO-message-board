@@ -1,5 +1,4 @@
-#include "common.h"
-#include "server-routines.h"
+#include "server.h"
 
 void sigint_handler(int signum);
 void *thread_communication_routine(void *arg);
