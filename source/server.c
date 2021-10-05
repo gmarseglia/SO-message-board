@@ -3,7 +3,6 @@
 void sigint_handler(int signum);
 void *thread_communication_routine(void *arg);
 void *thread_close_connection(int id, int sockfd);
-int dispatcher();
 
 // Struct for thread argument
 struct thread_arg{
@@ -18,8 +17,7 @@ int sockfd;
 /*
 	Server Main
 */
-int main(int argc, char const *argv[])
-{
+int main(int argc, char const *argv[]){
 	pthread_t tids[MAX_BACKLOG];
 	int serv_port = INITIAL_SERV_PORT;
 	int tCount = 0;
@@ -170,11 +168,16 @@ void *thread_communication_routine(void *arg){
 }
 
 /*
-	RETURNS:
-		0 in case of success
-		-1 in case of closed connection
-		exit_failure() in case of errors
-*/ 
+	Close communication with client
+*/
+void *thread_close_connection(int id, int sockfd){
+	printf("Thread[%d]: closed connection.\n", id);
+	if(close(sockfd) < 0 && errno != EBADF) perror("Error in server on close accepted socket\n");
+	return NULL;
+}
+
+// -------------------------------------------------
+// server.h operations
 int dispatcher(int acceptfd, user_info client_ui){
 	operation op;
 
@@ -191,7 +194,7 @@ int dispatcher(int acceptfd, user_info client_ui){
 		case OP_MSG_SUBJECT:
 			return post(acceptfd, client_ui, &op);
 		case OP_READ_REQUEST:
-			return read_response(acceptfd, client_ui, &op);
+			return read_all(acceptfd, client_ui, &op);
 		default:
 			printf("BEGIN%s\n(%s, %d) sent \'%c\' op:\n%s\n%sEND\n\n",
 			SEP, client_ui.username, client_ui.uid, op.code, op.text, SEP);
@@ -199,11 +202,55 @@ int dispatcher(int acceptfd, user_info client_ui){
 	}
 }
 
-/*
-	Close communication with client
-*/
-void *thread_close_connection(int id, int sockfd){
-	printf("Thread[%d]: closed connection.\n", id);
-	if(close(sockfd) < 0 && errno != EBADF) perror("Error in server on close accepted socket\n");
+user_info *find_user_by_username(char *username){
+	// Open Users file
+	FILE *users_file = fdopen(open(USERS_FILENAME, O_CREAT|O_RDWR, 0660), "r+");
+	if(users_file == NULL){
+		perror("Error in thread_communication_routine on fdopen");
+		exit(EXIT_FAILURE);
+	}
+
+	user_info *read_ui = malloc(sizeof(user_info));
+	if(read_ui == NULL){
+		fprintf(stderr, "Error in find_user on malloc\n");
+		exit_failure();
+	}
+
+	while(fscanf(users_file, "%d %ms %ms", &(read_ui->uid), &(read_ui->username), &(read_ui->passwd)) != EOF){
+		if(strcmp(username ,read_ui->username) == 0){
+			fclose(users_file);
+			return read_ui;
+		}
+	}
+
+	free(read_ui);
+	fclose(users_file);
 	return NULL;
 }
+
+user_info *find_user_by_uid(int uid){
+	// Open Users file
+	FILE *users_file = fdopen(open(USERS_FILENAME, O_CREAT|O_RDWR, 0660), "r+");
+	if(users_file == NULL){
+		perror("Error in thread_communication_routine on fdopen");
+		exit_failure();
+	}
+
+	user_info *read_ui = malloc(sizeof(user_info));
+	if(read_ui == NULL){
+		fprintf(stderr, "Error in find_user on malloc\n");
+		exit_failure();
+	}
+
+	while(fscanf(users_file, "%d %ms %ms", &(read_ui->uid), &(read_ui->username), &(read_ui->passwd)) != EOF){
+		if(read_ui->uid == uid){
+			fclose(users_file);
+			return read_ui;
+		}
+	}
+
+	free(read_ui);
+	fclose(users_file);
+	return NULL;
+}
+// -------------------------------------------------

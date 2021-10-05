@@ -1,7 +1,25 @@
 #include "server.h"
 
+/*
+	DESCRIPTION:
+		documentation/Server-Registration.jpeg
+	RETURNS:
+		In case of success: 0
+		In case of unsuccess, retry possible: -1
+		In case of error: exit(EXIT_FAILURE)
+*/
 int registration(int acceptfd, user_info *client_ui);
+
+/*
+	DESCRIPTION:
+		documentation/Client-Registration.png
+	RETURNS:
+		In case of success: 0
+		In case of unsuccess, retry possible: -1
+		In case of error: exit(EXIT_FAILURE)
+*/
 int login(int acceptfd, user_info *client_ui);
+// ------------------------------------------------------------
 
 int login_registration(int acceptfd, user_info* client_ui){
 	int read_uid;
@@ -20,14 +38,6 @@ int login_registration(int acceptfd, user_info* client_ui){
 	}
 }
 
-/*
-	DESCRIPTION:
-		documentation/Server-Registration.jpeg
-	RETURNS:
-		In case of success: 0
-		In case of unsuccess, retry possible: -1
-		In case of error: exit(EXIT_FAILURE)
-*/
 int registration(int acceptfd, user_info *client_ui){
 	// Local variables declaration
 	int read_uid;
@@ -124,14 +134,6 @@ int registration(int acceptfd, user_info *client_ui){
 	return 0;
 }
 
-/*
-	DESCRIPTION:
-		documentation/Client-Registration.png
-	RETURNS:
-		In case of success: 0
-		In case of unsuccess, retry possible: -1
-		In case of error: exit(EXIT_FAILURE)
-*/
 int login(int acceptfd, user_info *client_ui){
 	int read_uid;
 	char read_op;
@@ -185,37 +187,4 @@ int login(int acceptfd, user_info *client_ui){
 
 	// #10: return to main cycle
 	return 0;
-}
-
-/*
-	DESCRIPTION:
-		Search for entry that matches username
-	RETURNS:
-		In case of match found: new allocated struct user_info, filled with info read from users file
-		In case of match NOT found: NULL
-*/
-user_info *find_user_by_username(char *username){
-	// Open Users file
-	FILE *users_file = fdopen(open(USERS_FILENAME, O_CREAT|O_RDWR, 0660), "r+");
-	if(users_file == NULL){
-		perror("Error in thread_communication_routine on fdopen");
-		exit(EXIT_FAILURE);
-	}
-
-	user_info *read_ui = malloc(sizeof(user_info));
-	if(read_ui == NULL){
-		fprintf(stderr, "Error in find_user on malloc\n");
-		exit_failure();
-	}
-
-	while(fscanf(users_file, "%d %ms %ms", &(read_ui->uid), &(read_ui->username), &(read_ui->passwd)) != EOF){
-		if(strcmp(username ,read_ui->username) == 0){
-			fclose(users_file);
-			return read_ui;
-		}
-	}
-
-	free(read_ui);
-	fclose(users_file);
-	return NULL;
 }

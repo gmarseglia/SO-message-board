@@ -1,6 +1,11 @@
 #include "server.h"
 
+/*
+	DESCRIPTION:
+		Closes all files, free all buffers, return
+*/
 int close_post(int return_value, FILE ***files, char ***buffers);
+// ---------------------------------------------------------------
 
 int post(int acceptfd, user_info client_ui, operation *op){
 	char *subject = op->text, *body = NULL;

@@ -26,7 +26,6 @@ int UR;	//Users Read
 int MW;	//Messages Write
 int MR; //Messages Read
 
-
 /*
 	DESCRIPTION:
 		Ask user R or L, for Registration or Login
@@ -40,6 +39,16 @@ int login_registration(int acceptfd, user_info *client_ui);
 
 /*
 	DESCRIPTION:
+		Dispatch the different request incoming
+	RETURNS:
+		0 in case of success
+		-1 in case of closed connection
+		exit_failure() in case of errors
+*/ 
+int dispatcher(int acceptfd, user_info client_ui);
+
+/*
+	DESCRIPTION:
 		Save the message received
 	RETURNS:
 		0 in case of success
@@ -47,7 +56,6 @@ int login_registration(int acceptfd, user_info *client_ui);
 		In case of error: exit_failure()
 */
 int post(int acceptfd, user_info client_ui, operation *op);
-
 
 /*
 	DESCRIPTION:
@@ -57,8 +65,7 @@ int post(int acceptfd, user_info client_ui, operation *op);
 		-1 in case of unsuccess
 		In case of error: exit_failure()
 */
-int read_response(int acceptfd, user_info client_ui, operation *op);
-
+int read_all(int acceptfd, user_info client_ui, operation *op);
 
 /*
 	DESCRIPTION:
@@ -66,5 +73,12 @@ int read_response(int acceptfd, user_info client_ui, operation *op);
 		If not found returns NULL
 */
 user_info *find_user_by_username(char *username);
+
+/*
+	DESCRIPTION:
+		Look for user by uid and if found returs userinfo
+		If not found returns NULL
+*/
+user_info *find_user_by_uid(int uid);
 
 #endif

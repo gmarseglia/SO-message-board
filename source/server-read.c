@@ -1,8 +1,13 @@
 #include "server.h"
 
-int close_and_return(int return_value, FILE ***files);
+/*
+	DESCRIPTION:
+		Signal(MR, 1), Closes all files, return
+*/
+int close_read_all(int return_value, FILE ***files);
+// --------------------------------------------------------
 
-int read_response(int acceptfd, user_info client_ui, operation *op){
+int read_all(int acceptfd, user_info client_ui, operation *op){
 
 	printf("(%s, %d): read request.\n", client_ui.username, client_ui.uid);
 
@@ -56,7 +61,7 @@ int read_response(int acceptfd, user_info client_ui, operation *op){
 		// #5.2: Read from "Messages file" from message_offset Subject and Title
 		message_read = calloc(sizeof(char), message_len);
 		if(message_read == NULL)
-			return close_and_return(-1, files);
+			return close_read_all(-1, files);
 
 		fseek(messages_file, message_offset, SEEK_SET);
 		fread(message_read, 1, message_len, messages_file);
@@ -67,27 +72,27 @@ int read_response(int acceptfd, user_info client_ui, operation *op){
 		text_to_send_len = snprintf(NULL, 0, "%d\n%d\n%s", mid, uid, message_read);
 		text_to_send = calloc(sizeof(char), text_to_send_len + 1);
 		if(text_to_send == NULL)
-			return close_and_return(-1, files);
+			return close_read_all(-1, files);
 
 		sprintf(text_to_send, "%d\n%d\n%s", mid, uid, message_read);
 
 		send_success = send_message_to(acceptfd, UID_SERVER, OP_READ_RESPONSE, text_to_send);
-		
+
 		free(message_read);
 		free(text_to_send);
 		if(send_success < 0)
-			return close_and_return(-1, files);
+			return close_read_all(-1, files);
 
 	}	
 
 	// #6: Send (UID_SERVER, OP_OK, NULL)
 	if(send_message_to(acceptfd, UID_SERVER, OP_OK, NULL) < 0)
-		return close_and_return(-1, files);
+		return close_read_all(-1, files);
 
-	return close_and_return(0, files);
+	return close_read_all(0, files);
 }
 
-int close_and_return(int return_value, FILE ***files){
+int close_read_all(int return_value, FILE ***files){
 	// #N-1: Signal (MR, 1)
 	short_semop(MR, 1);
 
