@@ -1,27 +1,19 @@
 #include "server.h"
 
-int registration(FILE *users_file, int acceptfd, user_info *client_ui);
-int login(FILE *users_file, int acceptfd, user_info *client_ui);
-user_info *find_user(FILE *users_file, char *username);
+int registration(int acceptfd, user_info *client_ui);
+int login(int acceptfd, user_info *client_ui);
 
 int login_registration(int acceptfd, user_info* client_ui){
 	int read_uid;
 	char read_op;
 
-	// Open Users file
-	FILE *users_file = fdopen(open(USERS_FILENAME, O_CREAT|O_RDWR, 0660), "r+");
-	if(users_file == NULL){
-		perror("Error in thread_communication_routine on fdopen");
-		exit(EXIT_FAILURE);
-	}
-
 	if(receive_message_from(acceptfd, &read_uid, &read_op, &(client_ui->username)) < 0)
 		return -1;
 
 	if(read_uid == UID_ANON && read_op == OP_REG_USERNAME)
-		return registration(users_file, acceptfd, client_ui);
+		return registration(acceptfd, client_ui);
 	else if(read_uid == UID_ANON && read_op == OP_LOG_USERNAME)
-		return login(users_file, acceptfd, client_ui);
+		return login(acceptfd, client_ui);
 	else{
 		send_message_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Incorrect first operation. Expected OP_LOG_USERNAME or OP_REG_USERNAME");
 		return -1;
@@ -36,7 +28,7 @@ int login_registration(int acceptfd, user_info* client_ui){
 		In case of unsuccess, retry possible: -1
 		In case of error: exit(EXIT_FAILURE)
 */
-int registration(FILE *users_file, int acceptfd, user_info *client_ui){
+int registration(int acceptfd, user_info *client_ui){
 	// Local variables declaration
 	int read_uid;
 	char read_op;
@@ -59,7 +51,7 @@ int registration(FILE *users_file, int acceptfd, user_info *client_ui){
 	short_semop(UR, -MAX_THREAD);
 
 	// #5 Find username
-	read_ui = find_user(users_file, client_ui->username);
+	read_ui = find_user_by_username(client_ui->username);
 
 	// If username not found
 	if(read_ui != NULL){	
@@ -77,6 +69,14 @@ int registration(FILE *users_file, int acceptfd, user_info *client_ui){
 	}
 	
 	//	At the moment writes and reads are exclusive to this thread
+
+	// Open Users file
+	FILE *users_file = fdopen(open(USERS_FILENAME, O_CREAT|O_RDWR, 0660), "r+");
+	if(users_file == NULL){
+		perror("Error in thread_communication_routine on fdopen");
+		exit(EXIT_FAILURE);
+	}
+
 	// #6b Compute new UID
 	int last_uid;
 	int file_len;
@@ -132,7 +132,7 @@ int registration(FILE *users_file, int acceptfd, user_info *client_ui){
 		In case of unsuccess, retry possible: -1
 		In case of error: exit(EXIT_FAILURE)
 */
-int login(FILE * users_file, int acceptfd, user_info *client_ui){
+int login(int acceptfd, user_info *client_ui){
 	int read_uid;
 	char read_op;
 	user_info *read_ui;
@@ -157,13 +157,10 @@ int login(FILE * users_file, int acceptfd, user_info *client_ui){
 	short_semop(UW, 1);
 
 	// #5: search for username and fill user info
-	read_ui = find_user(users_file, client_ui->username);
+	read_ui = find_user_by_username(client_ui->username);
 
 	// #6: Signal (UR, 1)
 	short_semop(UR, 1);
-
-	// #7: Close users_file
-	fclose(users_file);
 
 	// #8a: If username ! found -> send OP_NOT_ACCEPTED
 	if(read_ui == NULL){
@@ -197,19 +194,28 @@ int login(FILE * users_file, int acceptfd, user_info *client_ui){
 		In case of match found: new allocated struct user_info, filled with info read from users file
 		In case of match NOT found: NULL
 */
-user_info *find_user(FILE *users_file, char *username){
+user_info *find_user_by_username(char *username){
+	// Open Users file
+	FILE *users_file = fdopen(open(USERS_FILENAME, O_CREAT|O_RDWR, 0660), "r+");
+	if(users_file == NULL){
+		perror("Error in thread_communication_routine on fdopen");
+		exit(EXIT_FAILURE);
+	}
+
 	user_info *read_ui = malloc(sizeof(user_info));
 	if(read_ui == NULL){
 		fprintf(stderr, "Error in find_user on malloc\n");
-		return NULL;
+		exit_failure();
 	}
 
-	while(fscanf(users_file, "%d %ms %ms",
-		&(read_ui->uid), &(read_ui->username), &(read_ui->passwd)) != EOF){
-		if(strcmp(username ,read_ui->username) == 0)
+	while(fscanf(users_file, "%d %ms %ms", &(read_ui->uid), &(read_ui->username), &(read_ui->passwd)) != EOF){
+		if(strcmp(username ,read_ui->username) == 0){
+			fclose(users_file);
 			return read_ui;
+		}
 	}
 
 	free(read_ui);
+	fclose(users_file);
 	return NULL;
 }

@@ -59,4 +59,12 @@ int post(int acceptfd, user_info client_ui, operation *op);
 */
 int read_response(int acceptfd, user_info client_ui, operation *op);
 
+
+/*
+	DESCRIPTION:
+		Look for user by username and if found returs userinfo
+		If not found returns NULL
+*/
+user_info *find_user_by_username(char *username);
+
 #endif
