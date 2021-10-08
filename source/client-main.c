@@ -6,11 +6,7 @@
 */
 void close_connenction_and_exit(int signum);
 
-int sockfd;
-
 int main(int argc, const char *argv[]){
-	user_info client_ui;
-	struct sockaddr_in addr;
 
 	const char *ip_address;
 	int port;
@@ -43,11 +39,11 @@ int main(int argc, const char *argv[]){
 	signal(SIGINT, close_connenction_and_exit);
 
 	// Client needs to register or login before being able to send message
-	while(login_registration(&sockfd, &addr, &client_ui) < 0);
+	while(login_registration() < 0);
 
 	// Main cycle
 	//	gets interrupted by SIGINT or errors
-	while(dispatcher(sockfd, client_ui) == 0);
+	while(dispatcher() == 0);
 
 	close_connenction_and_exit(0);
 }
@@ -60,20 +56,20 @@ void close_connenction_and_exit(int signum){
 
 // ---------------------------------------------
 // client.h operations
-int dispatcher(int sockfd, user_info client_ui){
-		char cli_op;
+int dispatcher(){
+		char cli_op[2];
 		// Ask users what cli_op they want to do
 		printf("\nWhat do you want to do?\n(P)ost, (R)ead, (D)elete, (E)xit\n");
-		while(scanf("%1s", &cli_op) < 1);
+		while(scanf("%1s", cli_op) < 1);
 		fflush(stdin);
 
-		switch(cli_op){
+		switch(cli_op[0]){
 			case CLI_OP_POST:
-				return post(sockfd, client_ui);
+				return post();
 			case CLI_OP_READ:
-				return read_all(sockfd, client_ui);
+				return read_all();
 			case CLI_OP_DELETE:
-				return delete_post(sockfd, client_ui);
+				return delete_post();
 			case CLI_OP_EXIT:
 				close_connenction_and_exit(0);
 			default:

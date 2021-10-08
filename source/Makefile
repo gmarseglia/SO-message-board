@@ -1,7 +1,7 @@
 server-sources=common.c server-main.c server-thread.c server-log-reg.c server-operations.c
 server-headers=common.h server.h
 # -------------------------------------------------------------
-client-sources=common.c client.c client-log-reg.c client-post.c client-read.c client-delete.c
+client-sources=common.c client-main.c client-log-reg.c client-operations.c
 client-headers=common.h client.h
 # ---------------------------------------
 rundir=runnable/
