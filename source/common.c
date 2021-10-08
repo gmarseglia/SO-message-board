@@ -125,3 +125,13 @@ void short_semop(int SEMAPHORE, int op){
 		exit_failure();
 	return;
 }
+
+void perror_and_failure(const char *s, const char *func){
+	if(func != NULL){
+		fprintf(stderr, "Error in %s on %s:\n", func, s);
+		perror(NULL);
+	} else {
+		perror(s);
+	}
+	exit_failure();
+}

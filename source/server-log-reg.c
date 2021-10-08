@@ -1,5 +1,14 @@
 #include "server.h"
 
+extern __thread int acceptfd;
+extern __thread user_info client_ui;
+extern __thread operation op;
+
+__thread int read_uid;
+__thread char read_op;
+__thread user_info *read_ui;
+__thread FILE *users_file;
+
 /*
 	DESCRIPTION:
 		documentation/Server-Registration.jpeg
@@ -8,7 +17,7 @@
 		In case of unsuccess, retry possible: -1
 		In case of error: exit(EXIT_FAILURE)
 */
-int registration(int acceptfd, user_info *client_ui);
+int registration();
 
 /*
 	DESCRIPTION:
@@ -18,14 +27,11 @@ int registration(int acceptfd, user_info *client_ui);
 		In case of unsuccess, retry possible: -1
 		In case of error: exit(EXIT_FAILURE)
 */
-int login(int acceptfd, user_info *client_ui);
+int login();
 // ------------------------------------------------------------
 
-int login_registration(int acceptfd, user_info* client_ui){
-	int read_uid;
-	char read_op;
-
-	if(receive_message_from(acceptfd, &read_uid, &read_op, &(client_ui->username)) < 0)
+int login_registration(){
+	if(receive_message_from(acceptfd, &read_uid, &read_op, &(client_ui.username)) < 0)
 		return -1;
 
 	if(read_uid == UID_ANON && read_op == OP_REG_USERNAME)
@@ -38,14 +44,9 @@ int login_registration(int acceptfd, user_info* client_ui){
 	}
 }
 
-int registration(int acceptfd, user_info *client_ui){
-	// Local variables declaration
-	int read_uid;
-	char read_op;
-	user_info *read_ui;
-
+int registration(){
 	// #2 Receive passwd
-	if(receive_message_from(acceptfd, &read_uid, &read_op, &(client_ui->passwd)) < 0)
+	if(receive_message_from(acceptfd, &read_uid, &read_op, &(client_ui.passwd)) < 0)
 		return -1;
 
 	// If not correct read_op OP_REG_PASSWD send read_op OP_NOT_ACCEPTED
@@ -61,7 +62,7 @@ int registration(int acceptfd, user_info *client_ui){
 	short_semop(UR, -MAX_THREAD);
 
 	// #5 Find username
-	read_ui = find_user_by_username(client_ui->username);
+	read_ui = find_user_by_username(client_ui.username);
 
 	// If username not found
 	if(read_ui != NULL){	
@@ -81,11 +82,8 @@ int registration(int acceptfd, user_info *client_ui){
 	//	At the moment writes and reads are exclusive to this thread
 
 	// Open Users file
-	FILE *users_file = fdopen(open(USERS_FILENAME, O_CREAT|O_RDWR, 0660), "r+");
-	if(users_file == NULL){
-		perror("Error in thread_communication_routine on fdopen");
-		exit(EXIT_FAILURE);
-	}
+	users_file = FDOPEN_USERS();
+	if(users_file == NULL) perror_and_failure("FDOPEN_USERS", __func__);
 
 	// #6b Compute new UID
 	int last_uid;
@@ -106,16 +104,15 @@ int registration(int acceptfd, user_info *client_ui){
 		sscanf(line_buffer, "%d", &last_uid);
 	}
 
-	client_ui->uid = last_uid + 1;
+	client_ui.uid = last_uid + 1;
 
 	#ifdef PRINT_DEBUG_FINE
-	printf("last_uid=%d, client_ui->uid=%d\n", last_uid, client_ui->uid);
+	printf("last_uid=%d, client_ui.uid=%d\n", last_uid, client_ui.uid);
 	#endif
 
-	// 7b Append on file
+	// 7b Append on and close file
 	fseek(users_file, 0, SEEK_END);
-	fprintf(users_file, "%d %s %s\n",
-		client_ui->uid, client_ui->username, client_ui->passwd);
+	fprintf(users_file, "%d %s %s\n", client_ui.uid, client_ui.username, client_ui.passwd);
 	fclose(users_file);
 
 	// #8b Signal (UR, MAX_THREAD)
@@ -126,7 +123,7 @@ int registration(int acceptfd, user_info *client_ui){
 
 	// #10b Send client OP_REG_UID with uid
 	char uid_str[6];
-	sprintf(uid_str, "%d", client_ui->uid);
+	sprintf(uid_str, "%d", client_ui.uid);
 	if(send_message_to(acceptfd, UID_SERVER, OP_REG_UID, uid_str) < 0)
 		return -1;
 
@@ -134,13 +131,9 @@ int registration(int acceptfd, user_info *client_ui){
 	return 0;
 }
 
-int login(int acceptfd, user_info *client_ui){
-	int read_uid;
-	char read_op;
-	user_info *read_ui;
-
+int login(){
 	// #1: Receive passwd
-	if(receive_message_from(acceptfd, &read_uid, &read_op, &(client_ui->passwd)) < 0)
+	if(receive_message_from(acceptfd, &read_uid, &read_op, &(client_ui.passwd)) < 0)
 		return -1;
 
 	// #2a: op incorrect -> send OP_NOT_ACCEPTED
@@ -159,7 +152,7 @@ int login(int acceptfd, user_info *client_ui){
 	short_semop(UW, 1);
 
 	// #5: search for username and fill user info
-	read_ui = find_user_by_username(client_ui->username);
+	read_ui = find_user_by_username(client_ui.username);
 
 	// #6: Signal (UR, 1)
 	short_semop(UR, 1);
@@ -171,19 +164,20 @@ int login(int acceptfd, user_info *client_ui){
 	}
 
 	// #8: Compare password
-	if(strcmp(client_ui->passwd, read_ui->passwd) != 0){
+	if(strcmp(client_ui.passwd, read_ui->passwd) != 0){
 		//	9a: If passwords don't match -> Send OP_NOT_ACCEPTED
 		send_message_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Passwords don't match");
 		return -1;
 	}
+
+	// Save UID in client_ui
+	client_ui.uid = read_ui->uid;
 
 	// #9: Send OP_LOG_UID with stored UID
 	char uid_str[6];
 	sprintf(uid_str, "%d", read_ui->uid);
 	if(send_message_to(acceptfd, UID_SERVER, OP_LOG_UID, uid_str) < 0)
 		return -1;
-	// Save UID in client_ui
-	client_ui->uid = read_ui->uid;
 
 	// #10: return to main cycle
 	return 0;

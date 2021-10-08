@@ -3,11 +3,22 @@
 
 #include "common.h"
 
+struct thread_arg{
+	int id;
+	int acceptfd;
+	struct sockaddr_in *client_addr;
+};
+
 // Files
 #define USERS_FILENAME "users.list"
 #define MESSAGES_FILENAME "messages.list"
 #define INDEX_FILENAME "index.list"
 #define FREE_AREAS_FILENAME "free-areas.list"
+
+#define FDOPEN_USERS() fdopen(open(USERS_FILENAME, O_CREAT | O_RDWR, 0660), "r+");
+#define FDOPEN_MESSAGES() fdopen(open(MESSAGES_FILENAME, O_CREAT | O_RDWR, 0660), "r+");
+#define FDOPEN_INDEX() fdopen(open(INDEX_FILENAME, O_CREAT | O_RDWR, 0660), "r+");
+#define FDOPEN_FREE_AREAS() fdopen(open(FREE_AREAS_FILENAME, O_CREAT | O_RDWR, 0660), "r+");
 
 // Operational flags
 #define SKIP_FREE_AREAS
@@ -35,7 +46,7 @@ int MR; //Messages Read
 		-1 in case of unsuccess
 		In case of error: exit_failure()
 */
-int login_registration(int acceptfd, user_info *client_ui);
+int login_registration();
 
 /*
 	DESCRIPTION:
@@ -44,7 +55,7 @@ int login_registration(int acceptfd, user_info *client_ui);
 		0 in case of success
 		-1 in case of closed connection
 */ 
-int dispatcher(int acceptfd, user_info client_ui);
+int dispatcher();
 
 /*
 	DESCRIPTION:
@@ -54,7 +65,7 @@ int dispatcher(int acceptfd, user_info client_ui);
 		-1 in case of unsuccess
 		In case of error: exit_failure()
 */
-int post(int acceptfd, user_info client_ui, operation *op);
+int post();
 
 /*
 	DESCRIPTION:
@@ -64,7 +75,7 @@ int post(int acceptfd, user_info client_ui, operation *op);
 		-1 in case of unsuccess
 		In case of error: exit_failure()
 */
-int read_all(int acceptfd, user_info client_ui, operation *op);
+int read_all();
 
 /*
 	DESCRIPTION:
@@ -74,7 +85,7 @@ int read_all(int acceptfd, user_info client_ui, operation *op);
 		0 in case of no error
 		-1 in case of error
 */
-int delete_post(int acceptfd, user_info client_ui, operation *op);
+int delete_post();
 
 /*
 	DESCRIPTION:
@@ -89,5 +100,7 @@ user_info *find_user_by_username(char *username);
 		If not found returns NULL
 */
 user_info *find_user_by_uid(int uid);
+
+void *thread_communication_routine(void *arg);
 
 #endif
