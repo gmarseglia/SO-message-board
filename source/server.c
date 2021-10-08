@@ -196,8 +196,7 @@ int dispatcher(int acceptfd, user_info client_ui){
 		case OP_READ_REQUEST:
 			return read_all(acceptfd, client_ui, &op);
 		case OP_DELETE_REQUEST:
-			send_message_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Delete not possible.");
-			return 0;
+			return delete_post(acceptfd, client_ui, &op);
 		default:
 			printf("BEGIN%s\n(%s, %d) sent \'%c\' op:\n%s\n%sEND\n\n",
 			SEP, client_ui.username, client_ui.uid, op.code, op.text, SEP);

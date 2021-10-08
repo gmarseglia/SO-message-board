@@ -68,6 +68,16 @@ int read_all(int acceptfd, user_info client_ui, operation *op);
 
 /*
 	DESCRIPTION:
+		Try to delete MID post
+		Successul if user asking to delete is the same user that posted
+	RETURNS:
+		0 in case of no error
+		-1 in case of error
+*/
+int delete_post(int acceptfd, user_info client_ui, operation *op);
+
+/*
+	DESCRIPTION:
 		Look for user by username and if found returs userinfo
 		If not found returns NULL
 */

@@ -64,7 +64,7 @@ int dispatcher(int sockfd, user_info client_ui){
 		char cli_op;
 		// Ask users what cli_op they want to do
 		printf("\nWhat do you want to do?\n(P)ost, (R)ead, (D)elete, (E)xit\n");
-		scanf("%c", &cli_op);
+		while(scanf("%1s", &cli_op) < 1);
 		fflush(stdin);
 
 		switch(cli_op){
