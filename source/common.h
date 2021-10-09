@@ -123,4 +123,11 @@ void print_operation(operation *op);
 */
 void short_semop(int semaphore, int op);
 
+/*
+	DESCRIPTION:
+		Print on stderr s and func
+		Call exit_failure();
+*/
+void perror_and_failure(const char *s, const char *func);
+
 #endif

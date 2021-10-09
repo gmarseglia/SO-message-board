@@ -12,6 +12,11 @@
 // Operational flags
 #define WAIT_SERVER_OK
 
+// Global variables
+struct sockaddr_in addr;
+int sockfd;
+user_info client_ui;
+
 /*
 	DESCRIPTION:
 		Ask if user wants to login or register
@@ -24,7 +29,7 @@
 		-1 in case of unsuccess
 		exit(EXIT_FAILURE) in case of error
 */
-int login_registration(int *sockfd, struct sockaddr_in *server_address, user_info *client_ui);
+int login_registration();
 
 /*
 	DESCRIPTION:
@@ -33,7 +38,7 @@ int login_registration(int *sockfd, struct sockaddr_in *server_address, user_inf
 		0 in case of success
 		-1 in case of error
 */ 
-int dispatcher(int sockfd, user_info client_ui);
+int dispatcher();
 
 /*
 	DESCRIPTION:
@@ -44,7 +49,7 @@ int dispatcher(int sockfd, user_info client_ui);
 		0 in case of success
 		-1 in case of error
 */
-int post(int sockfd, user_info client_ui);
+int post();
 
 /*
 	DESCRIPTION:
@@ -53,7 +58,7 @@ int post(int sockfd, user_info client_ui);
 		0 in case of success
 		-1 in case of error
 */
-int read_all(int sockfd, user_info client_ui);
+int read_all();
 
 /*
 	DESCRIPTION:
@@ -62,6 +67,6 @@ int read_all(int sockfd, user_info client_ui);
 		0 in case of success
 		-1 in case of error
 */
-int delete_post(int sockfd, user_info client_ui);
+int delete_post();
 
 #endif
