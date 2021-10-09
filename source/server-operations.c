@@ -49,7 +49,7 @@ int post(){
 		return -1;
 	body = op.text;
 
-	message_len = strlen(subject) + 1 + strlen(body) + 1;
+	message_len = strlen(subject) + 1 + strlen(body);
 
 	printf("(%s, %d): message sent.\n",	client_ui.username, client_ui.uid);
 
@@ -123,7 +123,6 @@ int post(){
 	fwrite(subject, 1, strlen(subject), messages_file);
 	fwrite("\n", 1, sizeof(char), messages_file);
 	fwrite(body, 1, strlen(body), messages_file);
-	fwrite("\n", 1, sizeof(char), messages_file);
 
 	// #9: Signal MR(MAX_THREAD)
 	short_semop(MR, MAX_THREAD);
@@ -189,13 +188,11 @@ int read_all(){
 
 		// #5.2: Read from "Messages file" from message_offset Subject and Title
 		message_read = calloc(sizeof(char), message_len);
-		if(message_read == NULL)
-			return close_read_all(-1);
+		if(message_read == NULL) return close_read_all(-1);
 
 		fseek(messages_file, message_offset, SEEK_SET);
 		fread(message_read, 1, message_len, messages_file);
-		// Cut the second '\n' in body
-		message_read[message_len - 1] = '\0';
+		message_read[message_len] = '\0';
 
 		// #5.3: Convert UID into Username
 		user_info *read_ui = find_user_by_uid(message_uid);
@@ -204,8 +201,7 @@ int read_all(){
 		// #5.4: Send (SERVER_UID, OP_READ_RESPONSE, MID + '\n' + Username + '\n' + Subject + '\n' + Body)
 		text_to_send_len = snprintf(NULL, 0, "%d\n%s\n%s", mid, username, message_read);
 		text_to_send = calloc(sizeof(char), text_to_send_len + 1);
-		if(text_to_send == NULL)
-			return close_read_all(-1);
+		if(text_to_send == NULL) return close_read_all(-1);
 
 		sprintf(text_to_send, "%d\n%s\n%s", mid, username, message_read);
 
@@ -272,7 +268,7 @@ int delete_post(){
 		return close_delete(send_message_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Message already deleted"), 1);	
 	}
 
-	// #8: write 0xffffffff in message_offset in index
+	// #8: write DELETED_OFFSET in message_offset in index
 	fseek(index_file, target_mid * INDEX_LINE_LEN, SEEK_SET);
 	fwrite(&DELETED_OFFSET, 1, sizeof(uint64_t), index_file);
 
@@ -281,7 +277,7 @@ int delete_post(){
 	fwrite(&message_offset, 1, sizeof(uint64_t), free_areas_file);
 	fwrite(&message_len, 1, sizeof(uint32_t), free_areas_file);
 
-	printf("(%s, %d): deletion post #%d accepted.\n",
+	printf("(%s, %d): deletion of post #%d accepted.\n",
 		client_ui.username, client_ui.uid, target_mid);
 
 	return close_delete(send_message_to(acceptfd, UID_SERVER, OP_OK, NULL), 1);

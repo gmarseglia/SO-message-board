@@ -28,6 +28,7 @@ int registration();
 		In case of error: exit(EXIT_FAILURE)
 */
 int login();
+
 // ------------------------------------------------------------
 
 int login_registration(){
