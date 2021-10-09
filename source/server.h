@@ -29,6 +29,7 @@ struct thread_arg{
 #define MAX_BACKLOG 1024
 #define MAX_THREAD 1024
 #define INDEX_LINE_LEN 16 // 8 long offset + 4 int message_len + 4 int UID + 1 char '\n'
+#define FREE_AREAS_LINE_LEN 12 // 8 uint64_t message_offset + 4 uint32_t message_len
 
 // Semaphores
 int UW;	//Users Write 

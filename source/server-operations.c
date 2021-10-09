@@ -85,18 +85,41 @@ int post(){
 	printf("index_file_len = %ld, mid = %d\n", index_file_len, mid);
 	#endif
 
-	#ifndef SKIP_FREE_AREAS
-	// #6: Search for free memory area in "Free file"
-	#endif
+	// #6: Search for free memory area in "Free file" using first fit
+	uint64_t read_offset;
+	uint32_t read_len;
+	size_t free_areas_file_len, read_bytes = 0;
 
-	// #7: Write on "Index file" at MID offset: (Message offset, Message len, Sender UID)
 	fseek(messages_file, 0, SEEK_END);
 	message_offset = ftell(messages_file);
+
+	fseek(free_areas_file, 0, SEEK_END);
+	free_areas_file_len = ftell(free_areas_file);
+
+	fseek(free_areas_file, 0, SEEK_SET);
+	for(read_bytes = 0; read_bytes < free_areas_file_len; ){
+		fread(&read_offset, 1, sizeof(uint64_t), free_areas_file);
+		fread(&read_len, 1, sizeof(uint32_t), free_areas_file);
+		if(read_len >= message_len){
+			message_offset = read_offset;
+			// #7a: Update "free areas file"
+			fseek(free_areas_file, read_bytes, SEEK_SET);
+			read_offset = read_offset + message_len;
+			read_len = read_len - message_len;
+			fwrite(&read_offset, 1, sizeof(uint64_t), free_areas_file);
+			fwrite(&read_len, 1, sizeof(uint32_t), free_areas_file);
+			break;
+		}
+		read_bytes += FREE_AREAS_LINE_LEN;
+	}
+
+	// #7: Write on "Index file" at MID offset: (Message offset, Message len, Sender UID)
 	fwrite(&message_offset, 1, sizeof(uint64_t), index_file);
 	fwrite(&message_len, 1, sizeof(uint32_t), index_file);
 	fwrite(&message_uid, 1, sizeof(uint32_t), index_file);
 
 	// #8: Write on "Message file" at Message offset: (Subject , '\n', Body, '\n')
+	fseek(messages_file, message_offset, SEEK_SET);
 	fwrite(subject, 1, strlen(subject), messages_file);
 	fwrite("\n", 1, sizeof(char), messages_file);
 	fwrite(body, 1, strlen(body), messages_file);
