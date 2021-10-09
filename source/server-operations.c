@@ -1,5 +1,7 @@
 #include "server.h"
 
+const uint64_t DELETED_OFFSET = 0xffffffffffffffff;
+
 extern __thread int acceptfd;
 extern __thread user_info client_ui;
 extern __thread operation op;
@@ -158,6 +160,10 @@ int read_all(){
 			mid, message_offset, message_len, message_uid);
 		#endif
 
+		if(message_offset == DELETED_OFFSET)
+			// #5.2a: Skip deleted
+			continue;
+
 		// #5.2: Read from "Messages file" from message_offset Subject and Title
 		message_read = calloc(sizeof(char), message_len);
 		if(message_read == NULL)
@@ -206,7 +212,7 @@ int delete_post(){
 
 	printf("(%s, %d): deletion of post #%d requested.\n", client_ui.username, client_ui.uid, target_mid);
 	
-	// #2: Open "Messages file", "Index file", "Free areas file"
+	// Open "Messages file", "Index file", "Free areas file"
 	FILE **actual_files[] = {&messages_file, &index_file, &free_areas_file, NULL};
 	files = actual_files;
 
@@ -216,31 +222,49 @@ int delete_post(){
 
 	if(messages_file == NULL || index_file == NULL || free_areas_file == NULL) perror_and_failure("FDOPEN", __func__);
 
-	// #3: Check target MID in bound
+	// #2: Check target MID in bound
 	fseek(index_file, 0, SEEK_END);
 	if(target_mid >= ftell(index_file) / INDEX_LINE_LEN){
 		return close_delete(send_message_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Post doesn't exist."), 0);
 	}
 
-	// #4: Wait MW(1)
+	// #3: Wait MW(1)
 	short_semop(MW, -1);
 
-	// #5: Wait MR(MAX_THREAD)
+	// #4: Wait MR(MAX_THREAD)
 	short_semop(MR, -MAX_THREAD);
 
-	// #6: Read info from "index file"
+	// #5: Read info from "index file"
 	read_mid_from_index(target_mid);
 
-	// #7: check UID match
+	// #6: check UID match
 	if(op.uid != message_uid){
-		return close_delete(send_message_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "UID don't match."), 1);
+		// #7a: send (UID_SERVER, OP_NOT_ACCETPED, "UID don't match")
+		return close_delete(send_message_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "UID don't match"), 1);
 	}
+
+	// #7: check if message already deleted
+	if(message_offset == DELETED_OFFSET){
+		// #8a: send (UID_SERVER, OP_NOT_ACCEPTED, "Message already deleted")
+		return close_delete(send_message_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Message already deleted"), 1);	
+	}
+
+	// #8: write 0xffffffff in message_offset in index
+	fseek(index_file, target_mid * INDEX_LINE_LEN, SEEK_SET);
+	fwrite(&DELETED_OFFSET, 1, sizeof(uint64_t), index_file);
+
+	// #9: append in "free-areas file" (offset, len)
+	fseek(free_areas_file, 0, SEEK_END);
+	fwrite(&message_offset, 1, sizeof(uint64_t), free_areas_file);
+	fwrite(&message_len, 1, sizeof(uint32_t), free_areas_file);
 
 	printf("(%s, %d): deletion post #%d accepted.\n",
 		client_ui.username, client_ui.uid, target_mid);
 
-	return close_delete(send_message_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Deletion not implemented."), 1);
+	return close_delete(send_message_to(acceptfd, UID_SERVER, OP_OK, NULL), 1);
 }
+
+// -----------------------------------
 
 int close_return(int return_value){
 	if(files != NULL){
@@ -269,12 +293,17 @@ int close_delete(int return_value, char semaphores){
 	buffers = NULL;
 
 	if(semaphores == 1){
+		// #N-2: signal(MR, MAX_THREAD)
 		short_semop(MR, MAX_THREAD);
+
+		// #N-1: signal(MW, 1)
 		short_semop(MW, 1);
 	}
 
 	return close_return(return_value);
 }
+
+// ----------------------------------------------------
 
 void read_mid_from_index(int mid){
 	fseek(index_file, mid * INDEX_LINE_LEN, SEEK_SET);
