@@ -1,7 +1,7 @@
 # SO-message-board
 Project for SO exam.
 
-Bacheca Elettronica
+## Specifica Bacheca Elettronica
 
 Realizzazione di un servizio "bacheca elettronica" il quale permetta ad ogni utente autorizzato di inviare messaggi che possono essere letti da ogni altro utente interessato a consultare la bacheca stessa.
 
@@ -19,3 +19,12 @@ l'applicazione client che per l'applicazione server.
 
 Per progetti misti Unix/Windows e' a scelta quale delle due applicazioni
 sviluppare per uno dei due sistemi.
+
+## Consegna e discussione delle tesine
+
+La discussione della tesina avra' luogo in concomitanza con gli appelli d'esame (tipicamente nei giorni successivi alle prove d'esame), pur non essendo necessario consegnare la tesina nello stesso appello in cui si sostiene la prova scritta. La presentazione della tesina deve avvenire attraverso una relazione strutturata (in linea di massima) come segue:
+Introduzione contenente le specifiche del progetto
+Discussione delle scelte di progetto e realizzative, e delle tecniche e metodologie generali usate
+Breve manuale d'uso dei programmi (come compilare, come installare)
+Tutti i sorgenti del progetto (escluse eventuali librerie esterne ed header di libreria/sistema)
+All'atto della discussione della tesina e' inoltre necessario portare un dispositivo di memoria USB con tutti i sorgenti in modo da rendere possibile la verifica del corretto funzionamento dei moduli sviluppati.
