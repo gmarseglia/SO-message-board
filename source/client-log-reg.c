@@ -1,4 +1,5 @@
 #include "client.h"
+#include "caesar-cipher.h"
 
 /*
 	DESCRIPTION:
@@ -117,8 +118,12 @@ int login(){
 }
 
 void user_info_fill(user_info* client_ui){
+	const int amount = 3;
+	const int increment = 14;
+	char *clear_passwd;
+
 	printf("Type username:\n");
-	do{
+	while(1){
 		scanf("%ms", &(client_ui->username));
 		if(client_ui->username == NULL)
 			continue;
@@ -128,20 +133,21 @@ void user_info_fill(user_info* client_ui){
 		}
 		fflush(stdin);
 		break;
-	} while(1);
+	}
 
 	printf("Type password:\n");
-	do{
-		scanf("%ms", &(client_ui->passwd));
-		if(client_ui->passwd == NULL)
+	while(1){
+		scanf("%ms", &clear_passwd);
+		if(clear_passwd == NULL)
 			continue;
-		if(strlen(client_ui->passwd) > MAXSIZE_PASSWD){
+		if(strlen(clear_passwd) > MAXSIZE_PASSWD){
 			printf("Passord too long: max size is %d\n", MAXSIZE_PASSWD);
 			continue;
 		}
 		fflush(stdin);
+		client_ui->passwd = caesar_cipher_2(clear_passwd, amount, increment);
 		break;
-	} while(1);
+	}
 	
 	return;
 }
