@@ -1,4 +1,8 @@
 #include "server.h"
+#include "caesar-cipher.h"
+
+const int amount = 10;
+const int increment = 20; 
 
 extern __thread int acceptfd;
 extern __thread user_info client_ui;
@@ -113,7 +117,9 @@ int registration(){
 
 	// 7b Append on and close file
 	fseek(users_file, 0, SEEK_END);
-	fprintf(users_file, "%d %s %s\n", client_ui.uid, client_ui.username, client_ui.passwd);
+	char *double_encrypted_passwd = caesar_cipher_2(client_ui.passwd, amount, increment);
+	fprintf(users_file, "%d %s %s\n", client_ui.uid, client_ui.username, double_encrypted_passwd);
+	free(double_encrypted_passwd);
 	fclose(users_file);
 
 	// #8b Signal (UR, MAX_THREAD)
@@ -165,11 +171,13 @@ int login(){
 	}
 
 	// #8: Compare password
-	if(strcmp(client_ui.passwd, read_ui->passwd) != 0){
+	char *double_encrypted_passwd = caesar_cipher_2(client_ui.passwd, amount, increment);
+	if(strcmp(double_encrypted_passwd, read_ui->passwd) != 0){
 		//	9a: If passwords don't match -> Send OP_NOT_ACCEPTED
 		send_message_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Passwords don't match");
 		return -1;
 	}
+	free(double_encrypted_passwd);
 
 	// Save UID in client_ui
 	client_ui.uid = read_ui->uid;
