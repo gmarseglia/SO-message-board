@@ -35,6 +35,7 @@
 // OP codes
 #define OP_MSG_SUBJECT 'm'
 #define OP_MSG_BODY 'M'
+#define OP_MSG 'm'
 // -----------------------
 #define OP_READ_REQUEST 'r'
 #define OP_READ_RESPONSE 'R'

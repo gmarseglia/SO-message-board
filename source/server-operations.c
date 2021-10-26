@@ -27,27 +27,24 @@ void read_mid_from_index(int mid);
 // ---------------------------------------------------------------
 
 int post(){
-	char *subject = op.text;
-	char *body = NULL;
+	char *subject, *body;
 
-	char **actual_buffers[] = {&subject, &body, NULL};
+	char **actual_buffers[] = {&subject, &op.text, NULL};
 	buffers = actual_buffers;
 
 	int mid;
 	long index_file_len;
 
-	message_uid = (uint32_t)op.uid;
-
 	// Check UID match
+	message_uid = (uint32_t) op.uid;
 	if(client_ui.uid != message_uid){
 		printf("client_ui.uid=%d != message_uid=%d\n", client_ui.uid, message_uid);
 		return -1;
 	}
 
-	// #1: Receive (client_uid, OP_MSG_BODY, body)
-	if(receive_operation_from(acceptfd, &op) < 0)
-		return -1;
-	body = op.text;
+	// #1: Extract Subject and Body from OP text
+	sscanf(op.text, "%m[^\n]", &subject);
+	body = &op.text[strlen(subject) + 1];
 
 	message_len = strlen(subject) + 1 + strlen(body);
 

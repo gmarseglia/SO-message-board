@@ -1,54 +1,50 @@
 #include "client.h"
 
 int post(){
-	char *subject, *body = NULL, *tmp_body;
-	int body_len = 0;
+	char *post_buffer, *body = NULL;
+	size_t len_buffer = 0;
 
 	// #1: Ask to user the Subject
 	printf("Insert the Subject of the message:\n");
 	do {
-		scanf("%m[^\n]", &subject);
+		scanf("%m[^\n]", &post_buffer);
 		fflush(stdin);
-	} while (subject == NULL);
+	} while (post_buffer == NULL);
 
 	// #2: Ask to user the Body
-	body = malloc(sizeof(char));
-	body[0] = '\0';
 	printf("Insert the Body of the message, double new line to end:\n");
 	while(1){
-		scanf("%m[^\n]", &tmp_body);
+		scanf("%m[^\n]", &body);
 		fflush(stdin);
-		if(tmp_body == NULL){
-			if(body_len == 0)
-				continue;
-			else
-				break;
+
+		if(body == NULL){
+			if(len_buffer == 0) continue;
+			break;
 		}
-		body_len = body_len + strlen(tmp_body) + 1;	// +1 because of '\n'
-		body = reallocarray(body, sizeof(char), body_len + 1);
-		body[body_len] = '\0';
-		strcat(body, tmp_body);
-		strcat(body, "\n");
-		free(tmp_body);
+
+		// Allocate the space for the buffer plus the new line of the body
+		len_buffer = strlen(post_buffer) + 1 + strlen(body);	// +1 because of '\n'
+		post_buffer = reallocarray(post_buffer, sizeof(char), len_buffer + 1);
+
+		post_buffer[len_buffer] = '\0';
+
+		strcat(post_buffer, "\n");
+		strcat(post_buffer, body);
+		free(body);
 	}
 
-	#ifdef PRINT_DEBUG_FINE
-	printf("BEGIN%s\n%s(%d) is sending:\n%s\n%s\n%s\n%s\n%sEND\n", SEP, client_ui.username, client_ui.uid, SEP,
-		subject, SEP, body, SEP);
-	#endif
+	// #ifdef PRINT_DEBUG_FINE
+	// printf("BEGIN%s\n%s(%d) is sending:\n%s\n%s\n%s\n%s\n%sEND\n", SEP, client_ui.username, client_ui.uid, SEP,
+	// 	subject, SEP, body, SEP);
+	// #endif
 
-	// #3: Send (UID, OP_MSG_SUBJECT, Subject)
-	if(send_message_to(sockfd, client_ui.uid, OP_MSG_SUBJECT, subject) < 0)
+	// #3: Send (UID, OP_MSG, Subject and Body)
+	if(send_message_to(sockfd, client_ui.uid, OP_MSG, post_buffer) < 0){
+		free(post_buffer);
 		return -1;
-	free(subject);
+	}
 
-	// #4: Send (UID, OP_MSG_BODY, Body)
-	if(send_message_to(sockfd, client_ui.uid, OP_MSG_BODY, body) < 0)
-		return -1;
-	free(body);
-
-	// #5: Receive (UID_SERVER, OP_OK, ID of the message)
-	#ifdef WAIT_SERVER_OK
+	// #4: Receive (UID_SERVER, OP_OK, ID of the message)
 	operation op;
 
 	if(receive_operation_from(sockfd, &op) < 0)
@@ -67,7 +63,6 @@ int post(){
 		fprintf(stderr, "Unknown error. Exiting.\n");
 	}
 	return -1;
-	#endif
 
 	printf("Message sent.\n");
 
