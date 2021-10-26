@@ -33,10 +33,10 @@ int post(){
 		free(body);
 	}
 
-	// #ifdef PRINT_DEBUG_FINE
-	// printf("BEGIN%s\n%s(%d) is sending:\n%s\n%s\n%s\n%s\n%sEND\n", SEP, client_ui.username, client_ui.uid, SEP,
-	// 	subject, SEP, body, SEP);
-	// #endif
+	#ifdef PRINT_DEBUG_FINE
+	printf("BEGIN%s\n%s(%d) is sending:\n%s\n%s\n%s\n%s\n%sEND\n", SEP, client_ui.username, client_ui.uid, SEP,
+		subject, SEP, body, SEP);
+	#endif
 
 	// #3: Send (UID, OP_MSG, Subject and Body)
 	if(send_message_to(sockfd, client_ui.uid, OP_MSG, post_buffer) < 0){
@@ -56,12 +56,12 @@ int post(){
 		return 0;
 	}
 
-	free(op.text);
 	if(op.uid == UID_SERVER && op.code == OP_NOT_ACCEPTED){
 		printf("Post refused: %s\n", op.text);
 	} else {
 		fprintf(stderr, "Unknown error. Exiting.\n");
 	}
+	free(op.text);
 	return -1;
 
 	printf("Message sent.\n");
