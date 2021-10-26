@@ -47,7 +47,7 @@ int dispatcher(){
 	#endif
 	
 	switch(op.code){
-		case OP_MSG_SUBJECT:
+		case OP_MSG:
 			return post();
 		case OP_READ_REQUEST:
 			return read_all();
