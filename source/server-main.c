@@ -2,17 +2,19 @@
 
 // sockfd is for the socket that accept connection, acceptfd is for the socket that does the communication
 int sockfd;
+pthread_t tids[MAX_THREAD];
 
 /*
 	Close the connection socket
 */
 void sigint_handler(int signum);
 
+void main_cycle();
+
 /*
 	Server Main
 */
 int main(int argc, char const *argv[]){
-	pthread_t tids[MAX_BACKLOG];
 	int serv_port = INITIAL_SERV_PORT;
 
 	printf("Server active.\n");
@@ -66,6 +68,12 @@ int main(int argc, char const *argv[]){
 	// Set the SIGINT handler
 	signal(SIGINT, sigint_handler);
 
+	main_cycle();
+
+	return 0;
+}
+
+void main_cycle(){
 	// Main cycle
 	socklen_t client_addr_len;
 	int free_thread;	/* It's safe to use int, MAX_THREAD upper bound is 32767 */
@@ -100,7 +108,7 @@ int main(int argc, char const *argv[]){
 		pthread_create(&tids[free_thread], NULL, thread_communication_routine, (void *)arg);
 	}
 
-	return 0;
+	return;
 }
 
 void sigint_handler(int signum){
