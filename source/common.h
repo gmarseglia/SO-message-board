@@ -119,10 +119,15 @@ void sockaddr_in_setup(struct sockaddr_in *addr, const char *ip_address, int por
 void print_operation(operation *op);
 
 /*
-	DESCRIPTION:
+	DESCRIPTION
 		Short version of semop
+
+	RETURN VALUE
+		If successful and operation completed returns 0.
+		If interrupted by signal returns -1.
+		Otherwise exits.
 */
-void short_semop(int semaphore, int op);
+int short_semop(int semaphore, int op);
 
 /*
 	DESCRIPTION:

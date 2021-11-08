@@ -120,12 +120,14 @@ void print_operation(operation *op){
 	return;
 }
 
-void short_semop(int SEMAPHORE, int op){
+int short_semop(int SEMAPHORE, int op){
 	struct sembuf actual_sem_op = {.sem_flg = 0, .sem_num = 0};
 	actual_sem_op.sem_op = op;
-	if(semop(SEMAPHORE, &actual_sem_op, 1) < 0)
-		exit_failure();
-	return;
+	if(semop(SEMAPHORE, &actual_sem_op, 1) < 0){
+		if(errno == EINTR)	return -1;
+		perror_and_failure(__func__, NULL);
+	}
+	return 0;
 }
 
 void perror_and_failure(const char *s, const char *func){

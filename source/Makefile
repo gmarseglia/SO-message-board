@@ -1,4 +1,4 @@
-server-sources=common.c server-main.c server-thread.c server-log-reg.c server-operations.c
+server-sources=common.c server-main.c server-thread.c server-log-reg.c server-operations.c pthread-bitmask.c
 server-headers=common.h server.h
 # -------------------------------------------------------------
 client-sources=common.c client-main.c client-log-reg.c client-operations.c

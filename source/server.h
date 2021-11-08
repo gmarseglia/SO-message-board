@@ -2,6 +2,7 @@
 #define SERVER_ROUTINES_H_INCLUDED
 
 #include "common.h"
+#include "pthread-bitmask.h"
 
 struct thread_arg{
 	int id;
@@ -27,16 +28,22 @@ struct thread_arg{
 #define INITIAL_SERV_PORT 6990
 #define INITIAL_UID 1000
 #define MAX_BACKLOG 1024
-#define MAX_THREAD 1024
+#define MAX_THREAD 1024		/* HAS TO BE LESS THAN 32767, "man semctl" */
 #define INDEX_LINE_LEN 16 // 8 long offset + 4 int message_len + 4 int UID + 1 char '\n'
 #define FREE_AREAS_LINE_LEN 12 // 8 uint64_t message_offset + 4 uint32_t message_len
 
 // Semaphores
 int UW;	//Users Write 
 int UR;	//Users Read
-// ---------------------
+
 int MW;	//Messages Write
 int MR; //Messages Read
+
+int sem_free_threads;	/* Free threads counter */
+
+// Bitmasks
+bitmask_t bm_free_threads;	/* 1 -> thread is free, 0 -> thread is busy */
+// bitmask_t bm_while;
 
 /*
 	DESCRIPTION:

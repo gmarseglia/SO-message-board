@@ -62,6 +62,15 @@ int dispatcher(){
 
 void *thread_close_connection(){
 	printf("Thread[%d]: closed connection.\n", id);
+
+	// Set thread as free
+	bitmask_add(&bm_free_threads, id);
+
+	bitmask_print(&bm_free_threads);
+
+	// Post on free threads semaphore
+	short_semop(sem_free_threads, 1);
+
 	if(close(acceptfd) < 0 && errno != EBADF) perror("Error in server on close accepted socket\n");
 	return NULL;
 }
