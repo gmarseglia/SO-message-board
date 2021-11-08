@@ -66,8 +66,6 @@ void *thread_close_connection(){
 	// Set thread as free
 	bitmask_add(&bm_free_threads, id);
 
-	bitmask_print(&bm_free_threads);
-
 	// Post on free threads semaphore
 	short_semop(sem_free_threads, 1);
 

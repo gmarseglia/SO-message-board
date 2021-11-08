@@ -327,3 +327,43 @@ void read_mid_from_index(int mid){
 	fread(&message_len, 1, sizeof(uint32_t), index_file);
 	fread(&message_uid, 1, sizeof(uint32_t), index_file);
 }
+
+user_info *find_user_by_username(char *username){
+	// Open Users file
+	FILE *users_file = FDOPEN_USERS();
+	if(users_file == NULL) perror_and_failure("FDOPEN()", __func__);
+
+	user_info *read_ui = malloc(sizeof(user_info));
+	if(read_ui == NULL) perror_and_failure ("read_ui malloc()", __func__);
+
+	while(fscanf(users_file, "%d %ms %ms", &(read_ui->uid), &(read_ui->username), &(read_ui->passwd)) != EOF){
+		if(strcmp(username ,read_ui->username) == 0){
+			fclose(users_file);
+			return read_ui;
+		}
+	}
+
+	free(read_ui);
+	fclose(users_file);
+	return NULL;
+}
+
+user_info *find_user_by_uid(int uid){
+	// Open Users file
+	FILE *users_file = FDOPEN_USERS();
+	if(users_file == NULL) perror_and_failure("FDOPEN_USERS()", __func__);
+
+	user_info *read_ui = malloc(sizeof(user_info));
+	if(read_ui == NULL) perror_and_failure("read_ui malloc()", __func__);
+
+	while(fscanf(users_file, "%d %ms %ms", &(read_ui->uid), &(read_ui->username), &(read_ui->passwd)) != EOF){
+		if(read_ui->uid == uid){
+			fclose(users_file);
+			return read_ui;
+		}
+	}
+
+	free(read_ui);
+	fclose(users_file);
+	return NULL;
+}
