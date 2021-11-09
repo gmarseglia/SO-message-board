@@ -1,5 +1,5 @@
 #include "client.h"
-#include "caesar-cipher.h"
+#include "../common/caesar-cipher.h"
 
 /*
 	DESCRIPTION:

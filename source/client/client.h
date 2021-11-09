@@ -1,7 +1,7 @@
 #ifndef CLIENT_ROUTINES_H_INCLUDED
 #define CLIENT_ROUTINES_H_INCLUDED
 
-#include "common.h"
+#include "../common/common.h"
 
 // Client OP codes for the dispatcher
 #define CLI_OP_POST 'P'

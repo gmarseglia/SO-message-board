@@ -1,8 +1,8 @@
-server-sources=common.c server-main.c server-thread.c server-log-reg.c server-operations.c pthread-bitmask.c
-server-headers=common.h server.h
+server-sources=common/common.c server/server-main.c server/server-thread.c server/server-log-reg.c server/server-operations.c common/pthread-bitmask.c
+server-headers=common/common.h server/server.h
 # -------------------------------------------------------------
-client-sources=common.c client-main.c client-log-reg.c client-operations.c
-client-headers=common.h client.h
+client-sources=common/common.c client/client-main.c client/client-log-reg.c client/client-operations.c
+client-headers=common/common.h client/client.h
 # ---------------------------------------
 rundir=runnable/
 # --------------

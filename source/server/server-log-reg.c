@@ -1,5 +1,5 @@
 #include "server.h"
-#include "caesar-cipher.h"
+#include "../common/caesar-cipher.h"
 
 const int amount = 10;
 const int increment = 20; 

@@ -1,8 +1,8 @@
 #ifndef SERVER_ROUTINES_H_INCLUDED
 #define SERVER_ROUTINES_H_INCLUDED
 
-#include "common.h"
-#include "pthread-bitmask.h"
+#include "../common/common.h"
+#include "../common/pthread-bitmask.h"
 
 struct thread_arg{
 	int id;
