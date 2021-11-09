@@ -1,35 +1,40 @@
-server-sources=common/common.c server/server-main.c server/server-thread.c server/server-log-reg.c server/server-operations.c common/pthread-bitmask.c
-server-headers=common/common.h server/server.h
+com-dir=common/
+ser-dir=server/
+cli-dir=client/
+run-dir=runnable/
+
+server-sources=$(com-dir)common.c $(ser-dir)server-main.c $(ser-dir)server-thread.c \
+	$(ser-dir)server-log-reg.c $(ser-dir)server-operations.c $(com-dir)pthread-bitmask.c
+server-headers=$(com-dir)/common.h $(ser-dir)/server.h
 # -------------------------------------------------------------
-client-sources=common/common.c client/client-main.c client/client-log-reg.c client/client-operations.c
-client-headers=common/common.h client/client.h
+client-sources=$(com-dir)common.c $(cli-dir)client-main.c $(cli-dir)client-log-reg.c $(cli-dir)client-operations.c
+client-headers=$(com-dir)common.h $(cli-dir)client.h
 # ---------------------------------------
-rundir=runnable/
 # --------------
-usrf=$(rundir)users.list
-msgf=$(rundir)index.list $(rundir)messages.list $(rundir)free-areas.list
+usrf=$(run-dir)users.list
+msgf=$(run-dir)index.list $(run-dir)messages.list $(run-dir)free-areas.list
 
 all: init
 	@clear
-	gcc $(server-sources) -o $(rundir)xserver -pthread -Werror=all -g -DPRINT_DEBUG
-	gcc $(client-sources) -o $(rundir)xclient -pthread -Werror=all -g -DPRINT_DEBUG -DDEBUG_SERVER
+	gcc $(server-sources) -o $(run-dir)xserver -pthread -Werror=all -g -DPRINT_DEBUG
+	gcc $(client-sources) -o $(run-dir)xclient -pthread -Werror=all -g -DPRINT_DEBUG -DDEBUG_SERVER
 
 simple: init
 	@clear
-	gcc $(server-sources) -o $(rundir)xserver -pthread
-	gcc $(client-sources) -o $(rundir)xclient -pthread
+	gcc $(server-sources) -o $(run-dir)xserver -pthread
+	gcc $(client-sources) -o $(run-dir)xclient -pthread
 
 fine: init
 	@clear
-	gcc $(server-sources) -o $(rundir)xserver -pthread -g -Werror=all -DPRINT_DEBUG -DPRINT_DEBUG_FINE
-	gcc $(client-sources) -o $(rundir)xclient -pthread -g -Werror=all -DPRINT_DEBUG -DPRINT_DEBUG_FINE -DDEBUG_SERVER
+	gcc $(server-sources) -o $(run-dir)xserver -pthread -g -Werror=all -DPRINT_DEBUG -DPRINT_DEBUG_FINE
+	gcc $(client-sources) -o $(run-dir)xclient -pthread -g -Werror=all -DPRINT_DEBUG -DPRINT_DEBUG_FINE -DDEBUG_SERVER
 
 init:
-	if [ ! -d $(rundir) ]; then mkdir $(rundir); fi
+	if [ ! -d $(run-dir) ]; then mkdir $(run-dir); fi
 
 clear:
-	rm -f $(rundir)xserver $(rundir)xclient $(usrf) $(msgf)
-	if [ -d $(rundir) ]; then rmdir $(rundir); fi
+	rm -f $(run-dir)xserver $(run-dir)xclient $(usrf) $(msgf)
+	if [ -d $(run-dir) ]; then rmdir $(run-dir); fi
 	clear
 
 subl-all: subl-server subl-client
