@@ -21,7 +21,7 @@ int send_operation_to(int sockfd, int uid, char code, char *text){
 	// Send pre-message:
 	//	writev enables to send different arrays as one
 	if((byte_written = writev(sockfd, iov, 3)) < 0){
-		perror("Error in send_operation_to on writev");
+		if(errno != EINTR)	perror("Error in send_operation_to on writev");
 		return -1;
 	}
 
@@ -34,7 +34,7 @@ int send_operation_to(int sockfd, int uid, char code, char *text){
 
 	// Send text
 	if((byte_written = write(sockfd, text, send_text_len)) != send_text_len){
-		perror("Error in send_operation_to on write");
+		if(errno != EINTR) perror("Error in send_operation_to on write");
 		return -1;
 	}
 
@@ -67,7 +67,7 @@ int receive_operation_from(int sockfd, int *uid, char *code, char **text){
 	iov[2].iov_len = sizeof(uint32_t);
 
 	if((byte_read = readv(sockfd, iov, 3)) <= 0){
-		if(byte_read < 0) perror("Error in receive_operation_from on readv");
+		if(byte_read < 0 && errno != EINTR) perror("Error in receive_operation_from on readv");
 		return -1;
 	}
 
@@ -88,7 +88,7 @@ int receive_operation_from(int sockfd, int *uid, char *code, char **text){
 	memset(*text, '\0', read_text_len + 1);
 
 	if((byte_read = read(sockfd, *text, read_text_len)) <= 0){
-		if(byte_read < 0) perror("Error in receive_operation_from on readv");
+		if(byte_read < 0 && errno != EINTR) perror("Error in receive_operation_from on readv");
 		return -1;
 	}
 
