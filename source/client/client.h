@@ -12,7 +12,7 @@
 // Global variables
 struct sockaddr_in addr;
 int sockfd;
-user_info client_ui;
+user_info_t client_ui;
 
 /*
 	DESCRIPTION:

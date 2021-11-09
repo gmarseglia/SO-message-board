@@ -45,7 +45,7 @@ int send_operation_to(int sockfd, int uid, char code, char *text){
 	return 0;
 }
 
-int send_operation_to_2(int sockfd, operation op){
+int send_operation_to_2(int sockfd, operation_t op){
 	return send_operation_to(sockfd, op.uid, op.code, op.text);
 }
 
@@ -99,7 +99,7 @@ int receive_operation_from(int sockfd, int *uid, char *code, char **text){
 	return 0;
 }
 
-int receive_operation_from_2(int sockfd, operation *op){
+int receive_operation_from_2(int sockfd, operation_t *op){
 	return receive_operation_from(sockfd, &(op->uid), &(op->code), &(op->text));
 }
 
@@ -115,7 +115,7 @@ void sockaddr_in_setup(struct sockaddr_in *addr, const char *ip_address, int por
 	return sockaddr_in_setup_inaddr(addr, inet_addr(ip_address), port);
 }
 
-void print_operation(operation *op){
+void print_operation(operation_t *op){
 	printf("(UID=%d, Code=%c, Text=%s)\n", op->uid, op->code, op->text);
 	return;
 }

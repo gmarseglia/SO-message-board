@@ -23,7 +23,7 @@ int registration();
 	DESCRIPTION:
 		Fill with username and password client_ui
 */
-void user_info_fill(user_info* client_ui);
+void user_info_fill(user_info_t* client_ui);
 
 // ---------------------------------------------------------------------------------------------
 
@@ -63,7 +63,7 @@ int login_registration(){
 }
 
 int registration(){
-	operation op;
+	operation_t op;
 
 	if(send_operation_to(sockfd, 0, OP_REG_USERNAME, client_ui.username) < 0)
 		return -1;
@@ -90,7 +90,7 @@ int registration(){
 }
 
 int login(){
-	operation op;
+	operation_t op;
 
 	if(send_operation_to(sockfd, UID_ANON, OP_LOG_USERNAME, client_ui.username) < 0)
 		return -1;
@@ -117,7 +117,7 @@ int login(){
 	return -1;
 }
 
-void user_info_fill(user_info* client_ui){
+void user_info_fill(user_info_t* client_ui){
 	const int amount = 3;
 	const int increment = 14;
 	char *clear_passwd;

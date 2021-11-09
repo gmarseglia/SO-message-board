@@ -3,8 +3,8 @@
 const uint64_t DELETED_OFFSET = 0xffffffffffffffff;
 
 extern __thread int acceptfd;
-extern __thread user_info client_ui;
-extern __thread operation op;
+extern __thread user_info_t client_ui;
+extern __thread operation_t op;
 
 __thread FILE *messages_file, *index_file,*free_areas_file;
 
@@ -192,7 +192,7 @@ int read_all_messages(){
 		message_read[message_len] = '\0';
 
 		// #5.3: Convert UID into Username
-		user_info *read_ui = find_user_by_uid(message_uid);
+		user_info_t *read_ui = find_user_by_uid(message_uid);
 		username = (read_ui == NULL) ? "Not found" : read_ui->username;
 
 		// #5.4: Send (SERVER_UID, OP_READ_RESPONSE, MID + '\n' + Username + '\n' + Subject + '\n' + Body)
@@ -328,12 +328,12 @@ void read_mid_from_index(int mid){
 	fread(&message_uid, 1, sizeof(uint32_t), index_file);
 }
 
-user_info *find_user_by_username(char *username){
+user_info_t *find_user_by_username(char *username){
 	// Open Users file
 	FILE *users_file = FDOPEN_USERS();
 	if(users_file == NULL) perror_and_failure("FDOPEN()", __func__);
 
-	user_info *read_ui = malloc(sizeof(user_info));
+	user_info_t *read_ui = malloc(sizeof(user_info_t));
 	if(read_ui == NULL) perror_and_failure ("read_ui malloc()", __func__);
 
 	while(fscanf(users_file, "%d %ms %ms", &(read_ui->uid), &(read_ui->username), &(read_ui->passwd)) != EOF){
@@ -348,12 +348,12 @@ user_info *find_user_by_username(char *username){
 	return NULL;
 }
 
-user_info *find_user_by_uid(int uid){
+user_info_t *find_user_by_uid(int uid){
 	// Open Users file
 	FILE *users_file = FDOPEN_USERS();
 	if(users_file == NULL) perror_and_failure("FDOPEN_USERS()", __func__);
 
-	user_info *read_ui = malloc(sizeof(user_info));
+	user_info_t *read_ui = malloc(sizeof(user_info_t));
 	if(read_ui == NULL) perror_and_failure("read_ui malloc()", __func__);
 
 	while(fscanf(users_file, "%d %ms %ms", &(read_ui->uid), &(read_ui->username), &(read_ui->passwd)) != EOF){

@@ -5,12 +5,12 @@ const int amount = 10;
 const int increment = 20; 
 
 extern __thread int acceptfd;
-extern __thread user_info client_ui;
-extern __thread operation op;
+extern __thread user_info_t client_ui;
+extern __thread operation_t op;
 
 __thread int read_uid;
 __thread char read_op;
-__thread user_info *read_ui;
+__thread user_info_t *read_ui;
 __thread FILE *users_file;
 
 /*
@@ -44,7 +44,7 @@ int login_registration(){
 	else if(read_uid == UID_ANON && read_op == OP_LOG_USERNAME)
 		return login(acceptfd, client_ui);
 	else{
-		send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Incorrect first operation. Expected OP_LOG_USERNAME or OP_REG_USERNAME");
+		send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Incorrect first operation_t. Expected OP_LOG_USERNAME or OP_REG_USERNAME");
 		return -1;
 	}
 }
@@ -56,7 +56,7 @@ int registration(){
 
 	// If not correct read_op OP_REG_PASSWD send read_op OP_NOT_ACCEPTED
 	if(!(read_uid == UID_ANON && read_op == OP_REG_PASSWD)){
-		send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Incorrect second operation. Expected OP_REG_PASSWD");
+		send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Incorrect second operation_t. Expected OP_REG_PASSWD");
 		return -1;
 	}
 

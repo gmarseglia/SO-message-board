@@ -100,14 +100,14 @@ int delete_message();
 		Look for user by username and if found returs userinfo
 		If not found returns NULL
 */
-user_info *find_user_by_username(char *username);
+user_info_t *find_user_by_username(char *username);
 
 /*
 	DESCRIPTION:
 		Look for user by uid and if found returs userinfo
 		If not found returns NULL
 */
-user_info *find_user_by_uid(int uid);
+user_info_t *find_user_by_uid(int uid);
 
 void *thread_communication_routine(void *arg);
 

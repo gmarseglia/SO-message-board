@@ -53,18 +53,18 @@
 #define UID_SERVER 1
 
 // Struct containing the user info
-typedef struct user_info {
+typedef struct user_info_t {
 	char *username;
 	char *passwd;
 	int uid;
-} user_info;
+} user_info_t;
 
 // Struct to encapslute operations
-typedef struct operation {
+typedef struct operation_t {
 	int uid;
 	char code;
 	char *text;
-} operation;
+} operation_t;
 
 #define SEP "--------------------------------"
 
@@ -73,7 +73,7 @@ typedef struct operation {
 		Send a text message in two steps:
 		1. Pre-message:
 			4 byte of int uid, User ID of the sender
-			1 byte of char code, code of the operation
+			1 byte of char code, code of the operation_t
 			4 byte of int text_len, Length of the text to send
 
 		2. Actual text
@@ -85,7 +85,7 @@ typedef struct operation {
 		-1 in case of error or connection closed
 */
 int send_operation_to(int sockfd, int uid, char code, char *text);
-int send_operation_to_2(int sockfd, operation op);
+int send_operation_to_2(int sockfd, operation_t op);
 
 /*
 	DESCRIPTION:
@@ -97,7 +97,7 @@ int send_operation_to_2(int sockfd, operation op);
 		-1 in case of error or connection closed
 */
 int receive_operation_from(int sockfd, int *uid, char *code, char **text);
-int receive_operation_from_2(int sockfd, operation *op);
+int receive_operation_from_2(int sockfd, operation_t *op);
 
 
 /*
@@ -109,16 +109,16 @@ void sockaddr_in_setup(struct sockaddr_in *addr, const char *ip_address, int por
 
 /*
 	DESCRIPTION:
-		Print all the data in operation
+		Print all the data in operation_t
 */
-void print_operation(operation *op);
+void print_operation(operation_t *op);
 
 /*
 	DESCRIPTION
 		Short version of semop
 
 	RETURN VALUE
-		If successful and operation completed returns 0.
+		If successful and operation_t completed returns 0.
 		If interrupted by signal returns -1.
 		Otherwise exits.
 */

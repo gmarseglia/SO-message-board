@@ -1,8 +1,8 @@
 #include "server.h"
 
 __thread int acceptfd;
-__thread user_info client_ui;
-__thread operation op;
+__thread user_info_t client_ui;
+__thread operation_t op;
 __thread int id;
 
 void *thread_close_connection();
@@ -37,7 +37,7 @@ void *thread_communication_routine(void *arg){
 }
 
 int dispatcher(){
-	// Receive first operation
+	// Receive first operation_t
 	if(receive_operation_from_2(acceptfd, &op) < 0)
 		return -1;
 
