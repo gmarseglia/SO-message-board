@@ -1,16 +1,16 @@
 #include "server.h"
-#include "caesar-cipher.h"
+#include "../common/caesar-cipher.h"
 
 const int amount = 10;
 const int increment = 20; 
 
 extern __thread int acceptfd;
-extern __thread user_info client_ui;
-extern __thread operation op;
+extern __thread user_info_t client_ui;
+extern __thread operation_t op;
 
 __thread int read_uid;
 __thread char read_op;
-__thread user_info *read_ui;
+__thread user_info_t *read_ui;
 __thread FILE *users_file;
 
 /*
@@ -36,7 +36,7 @@ int login();
 // ------------------------------------------------------------
 
 int login_registration(){
-	if(receive_message_from(acceptfd, &read_uid, &read_op, &(client_ui.username)) < 0)
+	if(receive_operation_from(acceptfd, &read_uid, &read_op, &(client_ui.username)) < 0)
 		return -1;
 
 	if(read_uid == UID_ANON && read_op == OP_REG_USERNAME)
@@ -44,19 +44,19 @@ int login_registration(){
 	else if(read_uid == UID_ANON && read_op == OP_LOG_USERNAME)
 		return login(acceptfd, client_ui);
 	else{
-		send_message_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Incorrect first operation. Expected OP_LOG_USERNAME or OP_REG_USERNAME");
+		send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Incorrect first operation_t. Expected OP_LOG_USERNAME or OP_REG_USERNAME");
 		return -1;
 	}
 }
 
 int registration(){
 	// #2 Receive passwd
-	if(receive_message_from(acceptfd, &read_uid, &read_op, &(client_ui.passwd)) < 0)
+	if(receive_operation_from(acceptfd, &read_uid, &read_op, &(client_ui.passwd)) < 0)
 		return -1;
 
 	// If not correct read_op OP_REG_PASSWD send read_op OP_NOT_ACCEPTED
 	if(!(read_uid == UID_ANON && read_op == OP_REG_PASSWD)){
-		send_message_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Incorrect second operation. Expected OP_REG_PASSWD");
+		send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Incorrect second operation_t. Expected OP_REG_PASSWD");
 		return -1;
 	}
 
@@ -78,7 +78,7 @@ int registration(){
 		short_semop(UW, 1);
 
 		// #8a Send OP_NOT_ACCEPTED to client
-		send_message_to(acceptfd, 1, OP_NOT_ACCEPTED, "Username already existing.");
+		send_operation_to(acceptfd, 1, OP_NOT_ACCEPTED, "Username already existing.");
 
 		// #9a
 		return -1;
@@ -131,7 +131,7 @@ int registration(){
 	// #10b Send client OP_REG_UID with uid
 	char uid_str[6];
 	sprintf(uid_str, "%d", client_ui.uid);
-	if(send_message_to(acceptfd, UID_SERVER, OP_REG_UID, uid_str) < 0)
+	if(send_operation_to(acceptfd, UID_SERVER, OP_REG_UID, uid_str) < 0)
 		return -1;
 
 	// 11b go to main cycle
@@ -140,12 +140,12 @@ int registration(){
 
 int login(){
 	// #1: Receive passwd
-	if(receive_message_from(acceptfd, &read_uid, &read_op, &(client_ui.passwd)) < 0)
+	if(receive_operation_from(acceptfd, &read_uid, &read_op, &(client_ui.passwd)) < 0)
 		return -1;
 
 	// #2a: op incorrect -> send OP_NOT_ACCEPTED
 	if(!(read_uid == UID_ANON && read_op == OP_LOG_PASSWD)){
-		send_message_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Incorrect OP, expected OP_LOG_PASSWD");
+		send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Incorrect OP, expected OP_LOG_PASSWD");
 		return -1;
 	}
 
@@ -166,7 +166,7 @@ int login(){
 
 	// #8a: If username ! found -> send OP_NOT_ACCEPTED
 	if(read_ui == NULL){
-		send_message_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Username not found");
+		send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Username not found");
 		return -1;
 	}
 
@@ -174,7 +174,7 @@ int login(){
 	char *double_encrypted_passwd = caesar_cipher_2(client_ui.passwd, amount, increment);
 	if(strcmp(double_encrypted_passwd, read_ui->passwd) != 0){
 		//	9a: If passwords don't match -> Send OP_NOT_ACCEPTED
-		send_message_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Passwords don't match");
+		send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Passwords don't match");
 		return -1;
 	}
 	free(double_encrypted_passwd);
@@ -185,7 +185,7 @@ int login(){
 	// #9: Send OP_LOG_UID with stored UID
 	char uid_str[6];
 	sprintf(uid_str, "%d", read_ui->uid);
-	if(send_message_to(acceptfd, UID_SERVER, OP_LOG_UID, uid_str) < 0)
+	if(send_operation_to(acceptfd, UID_SERVER, OP_LOG_UID, uid_str) < 0)
 		return -1;
 
 	// #10: return to main cycle

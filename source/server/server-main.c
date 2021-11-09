@@ -2,19 +2,20 @@
 
 // sockfd is for the socket that accept connection, acceptfd is for the socket that does the communication
 int sockfd;
+pthread_t tids[MAX_THREAD];
 
 /*
 	Close the connection socket
 */
 void sigint_handler(int signum);
 
+void main_cycle();
+
 /*
 	Server Main
 */
 int main(int argc, char const *argv[]){
-	pthread_t tids[MAX_BACKLOG];
 	int serv_port = INITIAL_SERV_PORT;
-	int tCount = 0;
 
 	printf("Server active.\n");
 
@@ -22,14 +23,18 @@ int main(int argc, char const *argv[]){
 	system("hostname -I | awk \'{print $1}\'");
 
 	// Initialize Users file semaphores
-	int *SEMAPHORES[4] = {&UR, &UW, &MR, &MW};
-	int SEMAPHORES_INIT_VALUE[4] = {MAX_THREAD, 1, MAX_THREAD, 1};
+	int *SEMAPHORES[] = {&UR, &UW, &MR, &MW, &sem_free_threads, NULL};
+	int SEMAPHORES_INIT_VALUE[] = {MAX_THREAD, 1, MAX_THREAD, 1, MAX_THREAD};
 
-	for(int i = 0; i < 4; i++){
+	for(int i = 0; SEMAPHORES[i] != NULL; i++){
 		*SEMAPHORES[i] = semget(IPC_PRIVATE, 1, IPC_CREAT | 0660);
 		if(*SEMAPHORES[i] == -1) perror_and_failure("on semget", __func__);
 		if(semctl(*SEMAPHORES[i], 0, SETVAL, SEMAPHORES_INIT_VALUE[i]) < 0) perror_and_failure("on semctl init", __func__);
 	}
+
+	// Initialize bitmask
+	if(bitmask_init(&bm_free_threads, MAX_THREAD) < 0)	perror_and_failure("on bitmask_init()", __func__);
+	bitmask_fill(&bm_free_threads);	/* Set all bit to 1, all threads are free */
 
 	// Create the socket for connection, use TCP
 	if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) perror_and_failure("on socket creation attempt", __func__);
@@ -63,8 +68,16 @@ int main(int argc, char const *argv[]){
 	// Set the SIGINT handler
 	signal(SIGINT, sigint_handler);
 
-	socklen_t client_addr_len;
+	main_cycle();
+
+	return 0;
+}
+
+void main_cycle(){
 	// Main cycle
+	socklen_t client_addr_len;
+	int free_thread;	/* It's safe to use int, MAX_THREAD upper bound is 32767 */
+
 	while(1){
 		// Initialize the struct to contain the address of the client once connected
 		struct sockaddr_in *client_addr = malloc(sizeof(struct sockaddr_in));
@@ -75,70 +88,36 @@ int main(int argc, char const *argv[]){
 		struct thread_arg *arg = malloc(sizeof(struct thread_arg));
 		if(arg == NULL) perror_and_failure("thread_arg malloc()", __func__);
 
+		// Wait for a free thread, BLOCKING
+		short_semop(sem_free_threads, -1);
+
+		// Find first free thread
+		if((free_thread = bitmask_find_first_set(&bm_free_threads)) < 0)
+			perror_and_failure("No free thread found in bitmask_find...()", __func__);
+
 		// Accept a pending connection, blocking call
 		arg->acceptfd = accept(sockfd, (struct sockaddr *)client_addr, &client_addr_len);
 		if(arg->acceptfd < 0) perror_and_failure("accept", __func__);
 
-		// Create a thread for handling the communication with client
-		arg->id = tCount;
-		arg->client_addr = client_addr;
-		pthread_create(&tids[tCount], NULL, thread_communication_routine, (void *)arg);
+		// Set thread as busy
+		bitmask_del(&bm_free_threads, free_thread);
 
-		// #TODO: limit thread based on MAX_BACKLOG
-		tCount = (tCount + 1) % MAX_BACKLOG;
+		// Create a thread for handling the communication with client
+		arg->id = free_thread;
+		arg->client_addr = client_addr;
+		pthread_create(&tids[free_thread], NULL, thread_communication_routine, (void *)arg);
 	}
 
-	return 0;
+	return;
 }
 
 void sigint_handler(int signum){
+	// Close all semaphore
 	semctl(UR, 0, IPC_RMID);
 	semctl(UW, 0, IPC_RMID);
 	semctl(MR, 0, IPC_RMID);
 	semctl(MW, 0, IPC_RMID);
+	semctl(sem_free_threads, 0, IPC_RMID);
 	if(close(sockfd) < 0) perror("Error in sigint_handler on close\n");
 	exit(1);
 }
-
-// -------------------------------------------------
-// server.h operations
-user_info *find_user_by_username(char *username){
-	// Open Users file
-	FILE *users_file = FDOPEN_USERS();
-	if(users_file == NULL) perror_and_failure("FDOPEN()", __func__);
-
-	user_info *read_ui = malloc(sizeof(user_info));
-	if(read_ui == NULL) perror_and_failure ("read_ui malloc()", __func__);
-
-	while(fscanf(users_file, "%d %ms %ms", &(read_ui->uid), &(read_ui->username), &(read_ui->passwd)) != EOF){
-		if(strcmp(username ,read_ui->username) == 0){
-			fclose(users_file);
-			return read_ui;
-		}
-	}
-
-	free(read_ui);
-	fclose(users_file);
-	return NULL;
-}
-
-user_info *find_user_by_uid(int uid){
-	// Open Users file
-	FILE *users_file = FDOPEN_USERS();
-	if(users_file == NULL) perror_and_failure("FDOPEN_USERS()", __func__);
-
-	user_info *read_ui = malloc(sizeof(user_info));
-	if(read_ui == NULL) perror_and_failure("read_ui malloc()", __func__);
-
-	while(fscanf(users_file, "%d %ms %ms", &(read_ui->uid), &(read_ui->username), &(read_ui->passwd)) != EOF){
-		if(read_ui->uid == uid){
-			fclose(users_file);
-			return read_ui;
-		}
-	}
-
-	free(read_ui);
-	fclose(users_file);
-	return NULL;
-}
-// -------------------------------------------------

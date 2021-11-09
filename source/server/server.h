@@ -1,7 +1,8 @@
 #ifndef SERVER_ROUTINES_H_INCLUDED
 #define SERVER_ROUTINES_H_INCLUDED
 
-#include "common.h"
+#include "../common/common.h"
+#include "../common/pthread-bitmask.h"
 
 struct thread_arg{
 	int id;
@@ -27,16 +28,22 @@ struct thread_arg{
 #define INITIAL_SERV_PORT 6990
 #define INITIAL_UID 1000
 #define MAX_BACKLOG 1024
-#define MAX_THREAD 1024
+#define MAX_THREAD 1024		/* HAS TO BE LESS THAN 32767, "man semctl" */
 #define INDEX_LINE_LEN 16 // 8 long offset + 4 int message_len + 4 int UID + 1 char '\n'
 #define FREE_AREAS_LINE_LEN 12 // 8 uint64_t message_offset + 4 uint32_t message_len
 
 // Semaphores
 int UW;	//Users Write 
 int UR;	//Users Read
-// ---------------------
+
 int MW;	//Messages Write
 int MR; //Messages Read
+
+int sem_free_threads;	/* Free threads counter */
+
+// Bitmasks
+bitmask_t bm_free_threads;	/* 1 -> thread is free, 0 -> thread is busy */
+// bitmask_t bm_while;
 
 /*
 	DESCRIPTION:
@@ -66,7 +73,7 @@ int dispatcher();
 		-1 in case of unsuccess
 		In case of error: exit_failure()
 */
-int post();
+int post_message();
 
 /*
 	DESCRIPTION:
@@ -76,7 +83,7 @@ int post();
 		-1 in case of unsuccess
 		In case of error: exit_failure()
 */
-int read_all();
+int read_all_messages();
 
 /*
 	DESCRIPTION:
@@ -86,21 +93,21 @@ int read_all();
 		0 in case of no error
 		-1 in case of error
 */
-int delete_post();
+int delete_message();
 
 /*
 	DESCRIPTION:
 		Look for user by username and if found returs userinfo
 		If not found returns NULL
 */
-user_info *find_user_by_username(char *username);
+user_info_t *find_user_by_username(char *username);
 
 /*
 	DESCRIPTION:
 		Look for user by uid and if found returs userinfo
 		If not found returns NULL
 */
-user_info *find_user_by_uid(int uid);
+user_info_t *find_user_by_uid(int uid);
 
 void *thread_communication_routine(void *arg);
 

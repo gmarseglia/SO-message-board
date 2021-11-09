@@ -1,6 +1,6 @@
 #include "common.h"
 
-int send_message_to(int sockfd, int uid, char code, char *text){
+int send_operation_to(int sockfd, int uid, char code, char *text){
 	uint32_t send_uid, send_text_len;
 	size_t byte_written;
 
@@ -21,7 +21,7 @@ int send_message_to(int sockfd, int uid, char code, char *text){
 	// Send pre-message:
 	//	writev enables to send different arrays as one
 	if((byte_written = writev(sockfd, iov, 3)) < 0){
-		perror("Error in send_message_to on writev");
+		perror("Error in send_operation_to on writev");
 		return -1;
 	}
 
@@ -34,7 +34,7 @@ int send_message_to(int sockfd, int uid, char code, char *text){
 
 	// Send text
 	if((byte_written = write(sockfd, text, send_text_len)) != send_text_len){
-		perror("Error in send_message_to on write");
+		perror("Error in send_operation_to on write");
 		return -1;
 	}
 
@@ -45,11 +45,11 @@ int send_message_to(int sockfd, int uid, char code, char *text){
 	return 0;
 }
 
-int send_operation_to(int sockfd, operation op){
-	return send_message_to(sockfd, op.uid, op.code, op.text);
+int send_operation_to_2(int sockfd, operation_t op){
+	return send_operation_to(sockfd, op.uid, op.code, op.text);
 }
 
-int receive_message_from(int sockfd, int *uid, char *code, char **text){
+int receive_operation_from(int sockfd, int *uid, char *code, char **text){
 	size_t byte_read;
 
 	uint32_t read_uid, read_text_len;
@@ -67,7 +67,7 @@ int receive_message_from(int sockfd, int *uid, char *code, char **text){
 	iov[2].iov_len = sizeof(uint32_t);
 
 	if((byte_read = readv(sockfd, iov, 3)) <= 0){
-		if(byte_read < 0) perror("Error in receive_message_from on readv");
+		if(byte_read < 0) perror("Error in receive_operation_from on readv");
 		return -1;
 	}
 
@@ -88,7 +88,7 @@ int receive_message_from(int sockfd, int *uid, char *code, char **text){
 	memset(*text, '\0', read_text_len + 1);
 
 	if((byte_read = read(sockfd, *text, read_text_len)) <= 0){
-		if(byte_read < 0) perror("Error in receive_message_from on readv");
+		if(byte_read < 0) perror("Error in receive_operation_from on readv");
 		return -1;
 	}
 
@@ -99,8 +99,8 @@ int receive_message_from(int sockfd, int *uid, char *code, char **text){
 	return 0;
 }
 
-int receive_operation_from(int sockfd, operation *op){
-	return receive_message_from(sockfd, &(op->uid), &(op->code), &(op->text));
+int receive_operation_from_2(int sockfd, operation_t *op){
+	return receive_operation_from(sockfd, &(op->uid), &(op->code), &(op->text));
 }
 
 void sockaddr_in_setup_inaddr(struct sockaddr_in *addr, unsigned int ip_address, int port){
@@ -115,17 +115,19 @@ void sockaddr_in_setup(struct sockaddr_in *addr, const char *ip_address, int por
 	return sockaddr_in_setup_inaddr(addr, inet_addr(ip_address), port);
 }
 
-void print_operation(operation *op){
+void print_operation(operation_t *op){
 	printf("(UID=%d, Code=%c, Text=%s)\n", op->uid, op->code, op->text);
 	return;
 }
 
-void short_semop(int SEMAPHORE, int op){
+int short_semop(int SEMAPHORE, int op){
 	struct sembuf actual_sem_op = {.sem_flg = 0, .sem_num = 0};
 	actual_sem_op.sem_op = op;
-	if(semop(SEMAPHORE, &actual_sem_op, 1) < 0)
-		exit_failure();
-	return;
+	if(semop(SEMAPHORE, &actual_sem_op, 1) < 0){
+		if(errno == EINTR)	return -1;
+		perror_and_failure(__func__, NULL);
+	}
+	return 0;
 }
 
 void perror_and_failure(const char *s, const char *func){

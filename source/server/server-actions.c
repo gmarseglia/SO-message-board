@@ -3,8 +3,8 @@
 const uint64_t DELETED_OFFSET = 0xffffffffffffffff;
 
 extern __thread int acceptfd;
-extern __thread user_info client_ui;
-extern __thread operation op;
+extern __thread user_info_t client_ui;
+extern __thread operation_t op;
 
 __thread FILE *messages_file, *index_file,*free_areas_file;
 
@@ -26,7 +26,7 @@ int close_delete(int return_value, char semaphores);
 void read_mid_from_index(int mid);
 // ---------------------------------------------------------------
 
-int post(){
+int post_message(){
 	char *subject, *body;
 
 	char **actual_buffers[] = {&subject, &op.text, NULL};
@@ -130,13 +130,13 @@ int post(){
 	// #11: Send (SERVER_UID, OP_OK, MID)
 	char mid_str[32];
 	sprintf(mid_str, "%d", mid);
-	if(send_message_to(acceptfd, UID_SERVER, OP_OK, mid_str) < 0)
+	if(send_operation_to(acceptfd, UID_SERVER, OP_OK, mid_str) < 0)
 		return close_return(-1);
 
 	return close_return(0);
 }
 
-int read_all(){
+int read_all_messages(){
 	printf("(%s, %d): read request.\n", client_ui.username, client_ui.uid);
 
 	int mid, max_mid;
@@ -192,7 +192,7 @@ int read_all(){
 		message_read[message_len] = '\0';
 
 		// #5.3: Convert UID into Username
-		user_info *read_ui = find_user_by_uid(message_uid);
+		user_info_t *read_ui = find_user_by_uid(message_uid);
 		username = (read_ui == NULL) ? "Not found" : read_ui->username;
 
 		// #5.4: Send (SERVER_UID, OP_READ_RESPONSE, MID + '\n' + Username + '\n' + Subject + '\n' + Body)
@@ -202,7 +202,7 @@ int read_all(){
 
 		sprintf(text_to_send, "%d\n%s\n%s", mid, username, message_read);
 
-		send_success = send_message_to(acceptfd, UID_SERVER, OP_READ_RESPONSE, text_to_send);
+		send_success = send_operation_to(acceptfd, UID_SERVER, OP_READ_RESPONSE, text_to_send);
 
 		free(read_ui);
 		free(message_read);
@@ -213,13 +213,13 @@ int read_all(){
 	}	
 
 	// #6: Send (UID_SERVER, OP_OK, NULL)
-	if(send_message_to(acceptfd, UID_SERVER, OP_OK, NULL) < 0)
+	if(send_operation_to(acceptfd, UID_SERVER, OP_OK, NULL) < 0)
 		return close_read_all(-1);
 
 	return close_read_all(0);
 }
 
-int delete_post(){
+int delete_message(){
 	int target_mid;
 
 	// #1: Read target MID
@@ -241,7 +241,7 @@ int delete_post(){
 	// #2: Check target MID in bound
 	fseek(index_file, 0, SEEK_END);
 	if(target_mid >= ftell(index_file) / INDEX_LINE_LEN){
-		return close_delete(send_message_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Post doesn't exist."), 0);
+		return close_delete(send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Post doesn't exist."), 0);
 	}
 
 	// #3: Wait MW(1)
@@ -256,13 +256,13 @@ int delete_post(){
 	// #6: check UID match
 	if(op.uid != message_uid){
 		// #7a: send (UID_SERVER, OP_NOT_ACCETPED, "UID don't match")
-		return close_delete(send_message_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "UID don't match"), 1);
+		return close_delete(send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "UID don't match"), 1);
 	}
 
 	// #7: check if message already deleted
 	if(message_offset == DELETED_OFFSET){
 		// #8a: send (UID_SERVER, OP_NOT_ACCEPTED, "Message already deleted")
-		return close_delete(send_message_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Message already deleted"), 1);	
+		return close_delete(send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Message already deleted"), 1);	
 	}
 
 	// #8: write DELETED_OFFSET in message_offset in index
@@ -277,7 +277,7 @@ int delete_post(){
 	printf("(%s, %d): deletion of post #%d accepted.\n",
 		client_ui.username, client_ui.uid, target_mid);
 
-	return close_delete(send_message_to(acceptfd, UID_SERVER, OP_OK, NULL), 1);
+	return close_delete(send_operation_to(acceptfd, UID_SERVER, OP_OK, NULL), 1);
 }
 
 // -----------------------------------
@@ -326,4 +326,44 @@ void read_mid_from_index(int mid){
 	fread(&message_offset, 1, sizeof(uint64_t), index_file);
 	fread(&message_len, 1, sizeof(uint32_t), index_file);
 	fread(&message_uid, 1, sizeof(uint32_t), index_file);
+}
+
+user_info_t *find_user_by_username(char *username){
+	// Open Users file
+	FILE *users_file = FDOPEN_USERS();
+	if(users_file == NULL) perror_and_failure("FDOPEN()", __func__);
+
+	user_info_t *read_ui = malloc(sizeof(user_info_t));
+	if(read_ui == NULL) perror_and_failure ("read_ui malloc()", __func__);
+
+	while(fscanf(users_file, "%d %ms %ms", &(read_ui->uid), &(read_ui->username), &(read_ui->passwd)) != EOF){
+		if(strcmp(username ,read_ui->username) == 0){
+			fclose(users_file);
+			return read_ui;
+		}
+	}
+
+	free(read_ui);
+	fclose(users_file);
+	return NULL;
+}
+
+user_info_t *find_user_by_uid(int uid){
+	// Open Users file
+	FILE *users_file = FDOPEN_USERS();
+	if(users_file == NULL) perror_and_failure("FDOPEN_USERS()", __func__);
+
+	user_info_t *read_ui = malloc(sizeof(user_info_t));
+	if(read_ui == NULL) perror_and_failure("read_ui malloc()", __func__);
+
+	while(fscanf(users_file, "%d %ms %ms", &(read_ui->uid), &(read_ui->username), &(read_ui->passwd)) != EOF){
+		if(read_ui->uid == uid){
+			fclose(users_file);
+			return read_ui;
+		}
+	}
+
+	free(read_ui);
+	fclose(users_file);
+	return NULL;
 }

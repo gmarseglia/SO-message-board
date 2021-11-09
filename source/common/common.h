@@ -26,15 +26,10 @@
 #define fflush(stdin) while(getchar() != '\n');
 #define exit_failure() exit(EXIT_FAILURE);
 
-#define SIZEOF_CHAR 1
-#define SIZEOF_INT 4
-
 // Max sizes
 #define MAXSIZE_USERNAME 32
 #define MAXSIZE_PASSWD 32
-// OP codes
-#define OP_MSG_SUBJECT 'm'
-#define OP_MSG_BODY 'M'
+// Operation codes
 #define OP_MSG 'm'
 // -----------------------
 #define OP_READ_REQUEST 'r'
@@ -58,18 +53,18 @@
 #define UID_SERVER 1
 
 // Struct containing the user info
-typedef struct user_info {
+typedef struct user_info_t {
 	char *username;
 	char *passwd;
 	int uid;
-} user_info;
+} user_info_t;
 
 // Struct to encapslute operations
-typedef struct operation {
+typedef struct operation_t {
 	int uid;
 	char code;
 	char *text;
-} operation;
+} operation_t;
 
 #define SEP "--------------------------------"
 
@@ -78,7 +73,7 @@ typedef struct operation {
 		Send a text message in two steps:
 		1. Pre-message:
 			4 byte of int uid, User ID of the sender
-			1 byte of char code, code of the operation
+			1 byte of char code, code of the operation_t
 			4 byte of int text_len, Length of the text to send
 
 		2. Actual text
@@ -89,8 +84,8 @@ typedef struct operation {
 		0 in case of success
 		-1 in case of error or connection closed
 */
-int send_message_to(int sockfd, int uid, char code, char *text);
-int send_operation_to(int sockfd, operation op);
+int send_operation_to(int sockfd, int uid, char code, char *text);
+int send_operation_to_2(int sockfd, operation_t op);
 
 /*
 	DESCRIPTION:
@@ -101,8 +96,8 @@ int send_operation_to(int sockfd, operation op);
 		0 in case of success
 		-1 in case of error or connection closed
 */
-int receive_message_from(int sockfd, int *uid, char *code, char **text);
-int receive_operation_from(int sockfd, operation *op);
+int receive_operation_from(int sockfd, int *uid, char *code, char **text);
+int receive_operation_from_2(int sockfd, operation_t *op);
 
 
 /*
@@ -114,15 +109,20 @@ void sockaddr_in_setup(struct sockaddr_in *addr, const char *ip_address, int por
 
 /*
 	DESCRIPTION:
-		Print all the data in operation
+		Print all the data in operation_t
 */
-void print_operation(operation *op);
+void print_operation(operation_t *op);
 
 /*
-	DESCRIPTION:
+	DESCRIPTION
 		Short version of semop
+
+	RETURN VALUE
+		If successful and operation_t completed returns 0.
+		If interrupted by signal returns -1.
+		Otherwise exits.
 */
-void short_semop(int semaphore, int op);
+int short_semop(int semaphore, int op);
 
 /*
 	DESCRIPTION:
