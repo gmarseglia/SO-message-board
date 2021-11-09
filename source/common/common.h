@@ -26,15 +26,10 @@
 #define fflush(stdin) while(getchar() != '\n');
 #define exit_failure() exit(EXIT_FAILURE);
 
-#define SIZEOF_CHAR 1
-#define SIZEOF_INT 4
-
 // Max sizes
 #define MAXSIZE_USERNAME 32
 #define MAXSIZE_PASSWD 32
-// OP codes
-#define OP_MSG_SUBJECT 'm'
-#define OP_MSG_BODY 'M'
+// Operation codes
 #define OP_MSG 'm'
 // -----------------------
 #define OP_READ_REQUEST 'r'
@@ -89,8 +84,8 @@ typedef struct operation {
 		0 in case of success
 		-1 in case of error or connection closed
 */
-int send_message_to(int sockfd, int uid, char code, char *text);
-int send_operation_to(int sockfd, operation op);
+int send_operation_to(int sockfd, int uid, char code, char *text);
+int send_operation_to_2(int sockfd, operation op);
 
 /*
 	DESCRIPTION:
@@ -101,8 +96,8 @@ int send_operation_to(int sockfd, operation op);
 		0 in case of success
 		-1 in case of error or connection closed
 */
-int receive_message_from(int sockfd, int *uid, char *code, char **text);
-int receive_operation_from(int sockfd, operation *op);
+int receive_operation_from(int sockfd, int *uid, char *code, char **text);
+int receive_operation_from_2(int sockfd, operation *op);
 
 
 /*

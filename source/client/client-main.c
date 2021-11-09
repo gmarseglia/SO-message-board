@@ -64,13 +64,13 @@ int dispatcher(){
 		fflush(stdin);
 
 		switch(cli_op[0]){
-			case CLI_OP_POST:
-				return post();
-			case CLI_OP_READ:
-				return read_all();
-			case CLI_OP_DELETE:
-				return delete_post();
-			case CLI_OP_EXIT:
+			case ACTION_POST:
+				return post_message();
+			case ACTION_READ:
+				return read_all_messages();
+			case ACTION_DELETE:
+				return delete_message();
+			case ACTION_EXIT:
 				close_connenction_and_exit(0);
 			default:
 				return 0;

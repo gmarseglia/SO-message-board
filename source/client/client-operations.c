@@ -1,6 +1,6 @@
 #include "client.h"
 
-int post(){
+int post_message(){
 	char *post_buffer, *body = NULL;
 	size_t len_buffer = 0;
 
@@ -39,7 +39,7 @@ int post(){
 	#endif
 
 	// #3: Send (UID, OP_MSG, Subject and Body)
-	if(send_message_to(sockfd, client_ui.uid, OP_MSG, post_buffer) < 0){
+	if(send_operation_to(sockfd, client_ui.uid, OP_MSG, post_buffer) < 0){
 		free(post_buffer);
 		return -1;
 	}
@@ -47,7 +47,7 @@ int post(){
 	// #4: Receive (UID_SERVER, OP_OK, ID of the message)
 	operation op;
 
-	if(receive_operation_from(sockfd, &op) < 0)
+	if(receive_operation_from_2(sockfd, &op) < 0)
 		return -1;
 
 	if(op.uid == UID_SERVER && op.code == OP_OK){
@@ -69,18 +69,18 @@ int post(){
 	return 0;
 }
 
-int read_all(){
+int read_all_messages(){
 	int read_mid;
 	char *read_username, *subject, *body;
 	size_t before_body_len;
 	operation op;
 
-	if(send_message_to(sockfd, client_ui.uid, OP_READ_REQUEST, NULL) < 0)
+	if(send_operation_to(sockfd, client_ui.uid, OP_READ_REQUEST, NULL) < 0)
 		return -1;
 
 	printf("\nPosts:\n\n");
 
-	while(receive_operation_from(sockfd, &op) == 0){
+	while(receive_operation_from_2(sockfd, &op) == 0){
 		switch(op.code){
 			case OP_READ_RESPONSE:
 				// Body ends with a single '\n'
@@ -108,7 +108,7 @@ int read_all(){
 	return 0;
 }
 
-int delete_post(){
+int delete_message(){
 	int target_mid;
 	char target_mid_str[32];
 
@@ -123,11 +123,11 @@ int delete_post(){
 	printf("Asking server to delete post #%d\n", target_mid);
 	sprintf(target_mid_str, "%d", target_mid);
 
-	if(send_message_to(sockfd, client_ui.uid, OP_DELETE_REQUEST, target_mid_str) < 0)
+	if(send_operation_to(sockfd, client_ui.uid, OP_DELETE_REQUEST, target_mid_str) < 0)
 		return -1;
 
 	// #3: Wait server response
-	if(receive_operation_from(sockfd, &op) < 0)
+	if(receive_operation_from_2(sockfd, &op) < 0)
 		return -1;
 
 	// #4: Check operation result

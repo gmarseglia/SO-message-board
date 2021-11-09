@@ -65,13 +65,13 @@ int login_registration(){
 int registration(){
 	operation op;
 
-	if(send_message_to(sockfd, 0, OP_REG_USERNAME, client_ui.username) < 0)
+	if(send_operation_to(sockfd, 0, OP_REG_USERNAME, client_ui.username) < 0)
 		return -1;
 
-	if(send_message_to(sockfd, 0, OP_REG_PASSWD, client_ui.passwd) < 0)
+	if(send_operation_to(sockfd, 0, OP_REG_PASSWD, client_ui.passwd) < 0)
 		return -1;
 	
-	if(receive_operation_from(sockfd, &op) < 0)
+	if(receive_operation_from_2(sockfd, &op) < 0)
 		return -1;
 
 	if(op.uid == UID_SERVER && op.code == OP_REG_UID){
@@ -92,13 +92,13 @@ int registration(){
 int login(){
 	operation op;
 
-	if(send_message_to(sockfd, UID_ANON, OP_LOG_USERNAME, client_ui.username) < 0)
+	if(send_operation_to(sockfd, UID_ANON, OP_LOG_USERNAME, client_ui.username) < 0)
 		return -1;
 
-	if(send_message_to(sockfd, UID_ANON, OP_LOG_PASSWD, client_ui.passwd) < 0)
+	if(send_operation_to(sockfd, UID_ANON, OP_LOG_PASSWD, client_ui.passwd) < 0)
 		return -1;
 	
-	if(receive_operation_from(sockfd, &op) < 0)
+	if(receive_operation_from_2(sockfd, &op) < 0)
 		return -1;
 
 	if(op.uid == UID_SERVER && op.code == OP_LOG_UID){

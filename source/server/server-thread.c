@@ -30,7 +30,7 @@ void *thread_communication_routine(void *arg){
 		id, client_ui.username, client_ui.uid, str_client_addr, i_client_port);
 
 	// Main cycle
-	//	gets interrupted when receive_message_from returns 0, meaning that connection was closed by client
+	//	gets interrupted when receive_operation_from returns 0, meaning that connection was closed by client
 	while(dispatcher() == 0);
 
 	return thread_close_connection();
@@ -38,7 +38,7 @@ void *thread_communication_routine(void *arg){
 
 int dispatcher(){
 	// Receive first operation
-	if(receive_operation_from(acceptfd, &op) < 0)
+	if(receive_operation_from_2(acceptfd, &op) < 0)
 		return -1;
 
 	#ifdef PRINT_DEBUG_FINE
@@ -48,15 +48,15 @@ int dispatcher(){
 	
 	switch(op.code){
 		case OP_MSG:
-			return post();
+			return post_message();
 		case OP_READ_REQUEST:
-			return read_all();
+			return read_all_messages();
 		case OP_DELETE_REQUEST:
-			return delete_post();
+			return delete_message();
 		default:
 			printf("BEGIN%s\n(%s, %d) sent \'%c\' op:\n%s\n%sEND\n\n",
 			SEP, client_ui.username, client_ui.uid, op.code, op.text, SEP);
-			return send_message_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Incorrect OP");			
+			return send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Incorrect OP");			
 	}
 }
 

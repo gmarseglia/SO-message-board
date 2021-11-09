@@ -73,7 +73,7 @@ int dispatcher();
 		-1 in case of unsuccess
 		In case of error: exit_failure()
 */
-int post();
+int post_message();
 
 /*
 	DESCRIPTION:
@@ -83,7 +83,7 @@ int post();
 		-1 in case of unsuccess
 		In case of error: exit_failure()
 */
-int read_all();
+int read_all_messages();
 
 /*
 	DESCRIPTION:
@@ -93,7 +93,7 @@ int read_all();
 		0 in case of no error
 		-1 in case of error
 */
-int delete_post();
+int delete_message();
 
 /*
 	DESCRIPTION:

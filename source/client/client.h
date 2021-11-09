@@ -4,13 +4,10 @@
 #include "../common/common.h"
 
 // Client OP codes for the dispatcher
-#define CLI_OP_POST 'P'
-#define CLI_OP_EXIT 'E'
-#define CLI_OP_READ 'R'
-#define CLI_OP_DELETE 'D'
-
-// Operational flags
-#define WAIT_SERVER_OK
+#define ACTION_POST 'P'
+#define ACTION_EXIT 'E'
+#define ACTION_READ 'R'
+#define ACTION_DELETE 'D'
 
 // Global variables
 struct sockaddr_in addr;
@@ -49,7 +46,7 @@ int dispatcher();
 		0 in case of success
 		-1 in case of error
 */
-int post();
+int post_message();
 
 /*
 	DESCRIPTION:
@@ -58,7 +55,7 @@ int post();
 		0 in case of success
 		-1 in case of error
 */
-int read_all();
+int read_all_messages();
 
 /*
 	DESCRIPTION:
@@ -67,6 +64,6 @@ int read_all();
 		0 in case of success
 		-1 in case of error
 */
-int delete_post();
+int delete_message();
 
 #endif
