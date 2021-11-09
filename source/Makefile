@@ -4,10 +4,10 @@ cli-dir=client/
 run-dir=runnable/
 
 server-sources=$(com-dir)common.c $(ser-dir)server-main.c $(ser-dir)server-thread.c \
-	$(ser-dir)server-log-reg.c $(ser-dir)server-operations.c $(com-dir)pthread-bitmask.c
+	$(ser-dir)server-log-reg.c $(ser-dir)server-actions.c $(com-dir)pthread-bitmask.c
 server-headers=$(com-dir)/common.h $(ser-dir)/server.h
 # -------------------------------------------------------------
-client-sources=$(com-dir)common.c $(cli-dir)client-main.c $(cli-dir)client-log-reg.c $(cli-dir)client-operations.c
+client-sources=$(com-dir)common.c $(cli-dir)client-main.c $(cli-dir)client-log-reg.c $(cli-dir)client-actions.c
 client-headers=$(com-dir)common.h $(cli-dir)client.h
 # ---------------------------------------
 # --------------
