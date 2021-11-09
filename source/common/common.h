@@ -37,13 +37,9 @@
 // -----------------------
 #define OP_DELETE_REQUEST 'd'
 // -----------------------
-#define OP_REG_USERNAME 'u'
-#define OP_REG_PASSWD 'p'
-#define OP_REG_UID 'i'
+#define OP_REG 'u'
 // -------------------------
-#define OP_LOG_USERNAME 'U'
-#define OP_LOG_PASSWD 'P'
-#define OP_LOG_UID 'I'
+#define OP_LOG 'U'
 // -------------------------
 #define OP_OK 'K'
 #define OP_NOT_ACCEPTED 'n'

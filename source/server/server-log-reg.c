@@ -13,6 +13,7 @@ __thread char read_op;
 __thread user_info_t *read_ui;
 __thread FILE *users_file;
 
+
 /*
 	DESCRIPTION:
 		documentation/Server-Registration.jpeg
@@ -36,30 +37,24 @@ int login();
 // ------------------------------------------------------------
 
 int login_registration(){
-	if(receive_operation_from(acceptfd, &read_uid, &read_op, &(client_ui.username)) < 0)
+	if(receive_operation_from_2(acceptfd, &op) < 0)
 		return -1;
 
-	if(read_uid == UID_ANON && read_op == OP_REG_USERNAME)
-		return registration(acceptfd, client_ui);
-	else if(read_uid == UID_ANON && read_op == OP_LOG_USERNAME)
-		return login(acceptfd, client_ui);
+	sscanf(op.text, "%ms %ms", &(client_ui.username), &(client_ui.passwd));
+	free(op.text);
+
+	if(op.uid == UID_ANON && op.code == OP_REG)
+		return registration();
+	else if(op.uid == UID_ANON && op.code == OP_LOG)
+		return login();
 	else{
-		send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Incorrect first operation_t. Expected OP_LOG_USERNAME or OP_REG_USERNAME");
+		send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Incorrect first operation_t. Expected OP_LOG or OP_REG");
 		return -1;
 	}
 }
 
 int registration(){
-	// #2 Receive passwd
-	if(receive_operation_from(acceptfd, &read_uid, &read_op, &(client_ui.passwd)) < 0)
-		return -1;
-
-	// If not correct read_op OP_REG_PASSWD send read_op OP_NOT_ACCEPTED
-	if(!(read_uid == UID_ANON && read_op == OP_REG_PASSWD)){
-		send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Incorrect second operation_t. Expected OP_REG_PASSWD");
-		return -1;
-	}
-
+	
 	// #3 Wait (UW, 1)
 	short_semop(UW, -1);
 
@@ -78,7 +73,7 @@ int registration(){
 		short_semop(UW, 1);
 
 		// #8a Send OP_NOT_ACCEPTED to client
-		send_operation_to(acceptfd, 1, OP_NOT_ACCEPTED, "Username already existing.");
+		send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Username already existing.");
 
 		// #9a
 		return -1;
@@ -131,7 +126,7 @@ int registration(){
 	// #10b Send client OP_REG_UID with uid
 	char uid_str[6];
 	sprintf(uid_str, "%d", client_ui.uid);
-	if(send_operation_to(acceptfd, UID_SERVER, OP_REG_UID, uid_str) < 0)
+	if(send_operation_to(acceptfd, UID_SERVER, OP_OK, uid_str) < 0)
 		return -1;
 
 	// 11b go to main cycle
@@ -139,15 +134,6 @@ int registration(){
 }
 
 int login(){
-	// #1: Receive passwd
-	if(receive_operation_from(acceptfd, &read_uid, &read_op, &(client_ui.passwd)) < 0)
-		return -1;
-
-	// #2a: op incorrect -> send OP_NOT_ACCEPTED
-	if(!(read_uid == UID_ANON && read_op == OP_LOG_PASSWD)){
-		send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Incorrect OP, expected OP_LOG_PASSWD");
-		return -1;
-	}
 
 	// #2: wait(UW, 1)
 	short_semop(UW, -1);
@@ -185,7 +171,7 @@ int login(){
 	// #9: Send OP_LOG_UID with stored UID
 	char uid_str[6];
 	sprintf(uid_str, "%d", read_ui->uid);
-	if(send_operation_to(acceptfd, UID_SERVER, OP_LOG_UID, uid_str) < 0)
+	if(send_operation_to(acceptfd, UID_SERVER, OP_OK, uid_str) < 0)
 		return -1;
 
 	// #10: return to main cycle
