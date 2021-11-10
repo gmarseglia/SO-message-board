@@ -45,3 +45,7 @@ subl-server:
 
 subl-client:
 	subl $(client-headers) $(client-sources)
+
+run: all
+	@clear
+	cd $(run-dir); x-terminal-emulator -e ./xserver && x-terminal-emulator

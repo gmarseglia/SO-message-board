@@ -13,6 +13,7 @@
 struct sockaddr_in addr;
 int sockfd;
 user_info_t client_ui;
+sigset_t sigset_all_blocked, sigset_sigint_allowed;
 
 /*
 	DESCRIPTION:
