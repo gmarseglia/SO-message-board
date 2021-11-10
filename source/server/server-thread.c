@@ -5,9 +5,11 @@ __thread user_info_t client_ui;
 __thread operation_t op;
 __thread int id;
 
-void *thread_close_connection();
 
 void *thread_communication_routine(void *arg){
+	// Block signals
+	pthread_sigmask(SIG_SETMASK, &set_all_blocked, NULL);
+
 	// Initialize local variables and free argument struct
 	struct thread_arg *t_arg = (struct thread_arg *)arg;
 	id = t_arg->id;
@@ -37,9 +39,15 @@ void *thread_communication_routine(void *arg){
 }
 
 int dispatcher(){
+	// Allow SIGUSR1
+	pthread_sigmask(SIG_SETMASK, &set_sigusr1_allowed, NULL);
+
 	// Receive first operation_t
 	if(receive_operation_from_2(acceptfd, &op) < 0)
 		return -1;
+
+	// Block signals
+	pthread_sigmask(SIG_SETMASK, &set_all_blocked, NULL);
 
 	#ifdef PRINT_DEBUG_FINE
 	printf("BEGIN%s\n(%s, %d) sent \'%c\' op:\n%s\n%sEND\n\n",

@@ -43,7 +43,9 @@ int sem_free_threads;	/* Free threads counter */
 
 // Bitmasks
 bitmask_t bm_free_threads;	/* 1 -> thread is free, 0 -> thread is busy */
-// bitmask_t bm_while;
+
+// Signal set
+sigset_t set_all_blocked, set_sigint_allowed, set_sigusr1_allowed;
 
 /*
 	DESCRIPTION:
@@ -110,5 +112,8 @@ user_info_t *find_user_by_username(char *username);
 user_info_t *find_user_by_uid(int uid);
 
 void *thread_communication_routine(void *arg);
+void signal_handler(int signum);
+void *thread_close_connection();
+
 
 #endif

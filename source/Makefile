@@ -5,7 +5,7 @@ run-dir=runnable/
 
 server-sources=$(com-dir)common.c $(ser-dir)server-main.c $(ser-dir)server-thread.c \
 	$(ser-dir)server-log-reg.c $(ser-dir)server-actions.c $(com-dir)pthread-bitmask.c
-server-headers=$(com-dir)/common.h $(ser-dir)/server.h
+server-headers=$(com-dir)common.h $(ser-dir)server.h
 # -------------------------------------------------------------
 client-sources=$(com-dir)common.c $(cli-dir)client-main.c $(cli-dir)client-log-reg.c $(cli-dir)client-actions.c
 client-headers=$(com-dir)common.h $(cli-dir)client.h
@@ -48,4 +48,4 @@ subl-client:
 
 run: all
 	@clear
-	cd $(run-dir); x-terminal-emulator -e ./xserver && x-terminal-emulator
+	cd $(run-dir); x-terminal-emulator -e './xserver && echo -e "\nPress any to exit..." && read' && x-terminal-emulator

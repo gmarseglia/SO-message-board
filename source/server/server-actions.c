@@ -139,6 +139,9 @@ int post_message(){
 int read_all_messages(){
 	printf("(%s, %d): read request.\n", client_ui.username, client_ui.uid);
 
+	//TODO REMOVE
+	sleep(3);
+
 	int mid, max_mid;
 	int send_success;
 

@@ -36,6 +36,23 @@ int main(int argc, char const *argv[]){
 	if(bitmask_init(&bm_free_threads, MAX_THREAD) < 0)	perror_and_failure("on bitmask_init()", __func__);
 	bitmask_fill(&bm_free_threads);	/* Set all bit to 1, all threads are free */
 
+	// Initialize signal sets
+	sigfillset(&set_all_blocked);
+	//pthread_sigmask(SIG_SETMASK, NULL, &set_sigint_allowed);
+	sigemptyset(&set_sigint_allowed);
+	sigaddset(&set_sigint_allowed, SIGUSR1);
+	//pthread_sigmask(SIG_SETMASK, NULL, &set_sigusr1_allowed);
+	sigemptyset(&set_sigusr1_allowed);
+	sigaddset(&set_sigusr1_allowed, SIGINT);
+
+	// Set signal handler
+	struct sigaction actual_sigaction = {.sa_handler = signal_handler, .sa_mask = set_all_blocked};
+	sigaction(SIGINT, &actual_sigaction, NULL);
+	sigaction(SIGUSR1, &actual_sigaction, NULL);
+
+	// Block signals
+	pthread_sigmask(SIG_SETMASK, &set_all_blocked, NULL);
+
 	// Create the socket for connection, use TCP
 	if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) perror_and_failure("on socket creation attempt", __func__);
 
@@ -65,9 +82,6 @@ int main(int argc, char const *argv[]){
 	printf("Server is on LISTEN\n");
 	#endif
 
-	// Set the SIGINT handler
-	signal(SIGINT, sigint_handler);
-
 	main_cycle();
 
 	return 0;
@@ -88,6 +102,9 @@ void main_cycle(){
 		struct thread_arg *arg = malloc(sizeof(struct thread_arg));
 		if(arg == NULL) perror_and_failure("thread_arg malloc()", __func__);
 
+		// Allow SIGINT
+		pthread_sigmask(SIG_SETMASK, &set_sigint_allowed, NULL);
+
 		// Wait for a free thread, BLOCKING
 		short_semop(sem_free_threads, -1);
 
@@ -98,6 +115,9 @@ void main_cycle(){
 		// Accept a pending connection, blocking call
 		arg->acceptfd = accept(sockfd, (struct sockaddr *)client_addr, &client_addr_len);
 		if(arg->acceptfd < 0) perror_and_failure("accept", __func__);
+
+		// Block signals
+		pthread_sigmask(SIG_SETMASK, &set_all_blocked, NULL);
 
 		// Set thread as busy
 		bitmask_del(&bm_free_threads, free_thread);
@@ -111,13 +131,48 @@ void main_cycle(){
 	return;
 }
 
-void sigint_handler(int signum){
-	// Close all semaphore
-	semctl(UR, 0, IPC_RMID);
-	semctl(UW, 0, IPC_RMID);
-	semctl(MR, 0, IPC_RMID);
-	semctl(MW, 0, IPC_RMID);
-	semctl(sem_free_threads, 0, IPC_RMID);
-	if(close(sockfd) < 0) perror("Error in sigint_handler on close\n");
-	exit(1);
+void signal_handler(int signum){
+	if(signum == SIGINT){
+		printf("\nSIGINT catched.\nSending SIGUSR1 to threads.\n");
+
+		// Send SIGUSR1 to all threads
+		for(int i = 0; i < MAX_THREAD; i++){
+			if(tids[i] != 0)
+				pthread_kill(tids[i], SIGUSR1);
+		}
+
+		printf("Joining threads.\n");
+
+		// Join threads
+		for(int i = 0; i < MAX_THREAD; i++){
+			if(tids[i] != 0)
+				pthread_join(tids[i], NULL);
+		}
+
+		// Close all semaphores
+		semctl(UR, 0, IPC_RMID);
+		semctl(UW, 0, IPC_RMID);
+		semctl(MR, 0, IPC_RMID);
+		semctl(MW, 0, IPC_RMID);
+		semctl(sem_free_threads, 0, IPC_RMID);
+
+		// Close connection socket
+		if(close(sockfd) < 0) perror("Error in sigint_handler on close\n");
+
+		printf("Server terminated.\n\n");
+
+		// Exit
+		exit(0);
+
+	} else if(signum == SIGUSR1){
+		// Thread close connection
+		thread_close_connection();
+
+		// Thread exit
+		pthread_exit(NULL);
+	}
+	
+	fprintf(stderr, "Unexpected signal %d catched. Quitting.\n", signum);
+	perror_and_failure(__func__, NULL);
+	return;
 }
