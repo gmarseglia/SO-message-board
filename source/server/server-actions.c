@@ -366,7 +366,7 @@ int close_return(int return_value){
 }
 
 int close_read_all(int return_value){
-	/* #N-1: Signal (MR, 1) */
+	/* #N-1: signal(MR, 1) */
 	short_semop(MR, 1);
 
 	/* Close files */
