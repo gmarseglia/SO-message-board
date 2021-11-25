@@ -15,28 +15,31 @@ __thread FILE *users_file;
 
 
 /*
-	DESCRIPTION:
-		documentation/Server-Registration.jpeg
-	RETURNS:
-		In case of success: 0
-		In case of unsuccess, retry possible: -1
-		In case of error: exit(EXIT_FAILURE)
+**	DESCRIPTION
+**		Allows Client to register their credentials.
+**
+**	RETURN VALUE
+**		In case of success: 0
+**		In case of unsuccess, retry possible: -1
+**		In case of error: exit(EXIT_FAILURE)
 */
 int registration();
 
 /*
-	DESCRIPTION:
-		documentation/Client-Registration.png
-	RETURNS:
-		In case of success: 0
-		In case of unsuccess, retry possible: -1
-		In case of error: exit(EXIT_FAILURE)
+**	DESCRIPTION
+**		Log in Client if their credentials are already been saved.
+**
+**	RETURN VALUE
+**		In case of success: 0
+**		In case of unsuccess, retry possible: -1
+**		In case of error: exit(EXIT_FAILURE)
 */
 int login();
 
 // ------------------------------------------------------------
 
 int login_registration(){
+	/* #1: Receive (username, passwd) */
 	if(receive_operation_from_2(acceptfd, &op) < 0)
 		return -1;
 
@@ -48,118 +51,120 @@ int login_registration(){
 	else if(op.uid == UID_ANON && op.code == OP_LOG)
 		return login();
 	else{
-		send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Incorrect first operation_t. Expected OP_LOG or OP_REG");
-		return -1;
+		send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED,
+			"Incorrect first operation_t. Expected OP_LOG or OP_REG");
+		return (-1);
 	}
 }
 
 int registration(){
 	
-	// #3 Wait (UW, 1)
+	/* #1: wait(UW, 1) */
 	short_semop(UW, -1);
 
-	// #4 Wait (UR, MAX_THREAD)
+	/* #2: wait(UR, MAX_THREAD) */
 	short_semop(UR, -MAX_THREAD);
 
-	// #5 Find username
+	/* #3: search for username and fill user info */ 
 	read_ui = find_user_by_username(client_ui.username);
 
-	// If username not found
-	if(read_ui != NULL){	
-		// #6a Signal (UR, MAX_THREAD)
+	/* Check if username found */
+	if(read_ui != NULL){
+
+		/* #4a: signal(UR, MAX_THREAD) */
 		short_semop(UR, MAX_THREAD);
 
-		// #7a Signal (UW, 1)
+		/* #5a: signal(UW, 1) */
 		short_semop(UW, 1);
 
-		// #8a Send OP_NOT_ACCEPTED to client
+		/* #6a Send OP_NOT_ACCEPTED */
 		send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Username already existing.");
 
 		// #9a
 		return -1;
 	}
 	
-	//	At the moment writes and reads are exclusive to this thread
-
-	// Open Users file
+	/* Open files */
 	users_file = FDOPEN_USERS();
 	if(users_file == NULL) perror_and_failure("FDOPEN_USERS", __func__);
 
-	// #6b Compute new UID
+	/* #4: Compute new UID */
 	int last_uid;
 	int file_len;
 	fseek(users_file, 0, SEEK_END);
 	file_len = ftell(users_file);
 
-	// Find last UID
-	if(file_len == 0){
+	/* Find last UID */
+	if(file_len == 0){	/* If file is empty, last UID is INITIAL_UID*/
 		last_uid = INITIAL_UID;
 	} else {
+		/* 5 for UID + MAXSIZE of username and passwd + 3 Blanks + 1 new line */
 		int max_line_len = MAXSIZE_USERNAME + MAXSIZE_PASSWD + 5 + 3 + 1;
-		char line_buffer[max_line_len + 1];
+		char line_buffer[max_line_len + 1];		/* Allocate space */
 		memset(line_buffer, '\0', max_line_len + 1);
 
 		fseek(users_file, file_len > max_line_len ? -max_line_len : -file_len, SEEK_END);
-		while(fgets(line_buffer, max_line_len, users_file) != NULL);
-		sscanf(line_buffer, "%d", &last_uid);
+		while(fgets(line_buffer, max_line_len, users_file) != NULL);	/* Read last line */
+		sscanf(line_buffer, "%d", &last_uid);	/* sscanf to convert to int */
 	}
 
+	/* New UID to assign is the last UID + 1 */
 	client_ui.uid = last_uid + 1;
 
 	#ifdef PRINT_DEBUG_FINE
-	printf("last_uid=%d, client_ui.uid=%d\n", last_uid, client_ui.uid);
+		printf("last_uid=%d, client_ui.uid=%d\n", last_uid, client_ui.uid);
 	#endif
 
-	// 7b Append on and close file
+	/* #5: Append on files */
 	fseek(users_file, 0, SEEK_END);
 	char *double_encrypted_passwd = caesar_cipher_2(client_ui.passwd, amount, increment);
 	fprintf(users_file, "%d %s %s\n", client_ui.uid, client_ui.username, double_encrypted_passwd);
 	free(double_encrypted_passwd);
-	fclose(users_file);
+	fclose(users_file);	/* It's important to close, to save changes on files */
 
-	// #8b Signal (UR, MAX_THREAD)
+	/* #6: signal(UR, MAX_THREAD) */
 	short_semop(UR, MAX_THREAD);
 
-	// #9b Signal UW
+	/* #7: signal(UW, 1) */
 	short_semop(UW, 1);
 
-	// #10b Send client OP_REG_UID with uid
+	/* #8: Send OP_OK with UID */
 	char uid_str[6];
 	sprintf(uid_str, "%d", client_ui.uid);
 	if(send_operation_to(acceptfd, UID_SERVER, OP_OK, uid_str) < 0)
 		return -1;
 
-	// 11b go to main cycle
 	return 0;
 }
 
 int login(){
 
-	// #2: wait(UW, 1)
+	/* #1: wait(UW, 1) */
 	short_semop(UW, -1);
 
-	// #3: wait(UR, 1);
+	/* #2: wait(UR, 1) */
 	short_semop(UR, -1);
 
-	// #4: signal(UW, 1)
+	/* #3: signal(UW, 1) */
 	short_semop(UW, 1);
 
-	// #5: search for username and fill user info
+	/* #4: search for username and fill user info */
 	read_ui = find_user_by_username(client_ui.username);
 
-	// #6: Signal (UR, 1)
+	/* #5: Signal (UR, 1) */
 	short_semop(UR, 1);
 
-	// #8a: If username ! found -> send OP_NOT_ACCEPTED
+	/* Check if username found */
 	if(read_ui == NULL){
+	/* #6a: send OP_NOT_ACCEPTED */
 		send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Username not found");
 		return -1;
 	}
 
-	// #8: Compare password
+	/* #6: Decrypt and compare password */
 	char *double_encrypted_passwd = caesar_cipher_2(client_ui.passwd, amount, increment);
-	if(strcmp(double_encrypted_passwd, read_ui->passwd) != 0){
-		//	9a: If passwords don't match -> Send OP_NOT_ACCEPTED
+	if(strcmp(double_encrypted_passwd, read_ui->passwd) != 0){	/* Passwords are different */
+		/* 6a: Send OP_NOT_ACCEPTED */
 		send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Passwords don't match");
 		return -1;
 	}
@@ -168,12 +173,11 @@ int login(){
 	// Save UID in client_ui
 	client_ui.uid = read_ui->uid;
 
-	// #9: Send OP_LOG_UID with stored UID
+	/* #7: Send OP_OK with stored UID */
 	char uid_str[6];
 	sprintf(uid_str, "%d", read_ui->uid);
 	if(send_operation_to(acceptfd, UID_SERVER, OP_OK, uid_str) < 0)
 		return -1;
 
-	// #10: return to main cycle
 	return 0;
 }
