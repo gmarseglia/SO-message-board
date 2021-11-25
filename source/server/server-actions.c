@@ -70,10 +70,10 @@ int post_message(){
 	if(messages_file == NULL || index_file == NULL || free_areas_file == NULL)
 		perror_and_failure("FDOPEN", __func__);
 
-	/* #3: Wait MW(1) */
+	/* #3: wait(MW, 1) */
 	short_semop(MW, -1);
 
-	/* #4: Wait MR(MAX_THREAD) */
+	/* #4: wait(MR, MAX_THREAD) */
 	short_semop(MR, -MAX_THREAD);
 
 	/* #5: Compute MID, Message ID */
@@ -96,7 +96,7 @@ int post_message(){
 	fseek(messages_file, 0, SEEK_END);
 	message_offset = ftell(messages_file);
 
-	/* Find free areas file length */
+	/* Find "free areas file" length */
 	fseek(free_areas_file, 0, SEEK_END);	
 	free_areas_file_len = ftell(free_areas_file);
 	fseek(free_areas_file, 0, SEEK_SET);
@@ -139,10 +139,10 @@ int post_message(){
 	fwrite("\n", 1, sizeof(char), messages_file);
 	fwrite(body, 1, strlen(body), messages_file);
 
-	/* #9: Signal MR(MAX_THREAD) */
+	/* #9: signal(MR, MAX_THREAD) */
 	short_semop(MR, MAX_THREAD);
 
-	/* #10: Signal MW(1) */
+	/* #10: signal(MW, 1) */
 	short_semop(MW, 1);
 
 	/* #11: Send (SERVER_UID, OP_OK, MID) */
@@ -164,13 +164,13 @@ int read_all_messages(){
 	char *message_read, *text_to_send;
 	size_t text_to_send_len;
 
-	/* #1: Wait (MW, 1)	*/
+	/* #1: wait(MW, 1)	*/
 	short_semop(MW, -1);
 
-	/* #2: Wait (MR, 1) */
+	/* #2: wait(MR, 1) */
 	short_semop(MR, -1);
 
-	/* #3: Signal (MW, 1) */
+	/* #3: signal(MW, 1) */
 	short_semop(MW, 1);
 
 	/* Contains files which are going to be closed */
@@ -269,18 +269,19 @@ int delete_message(){
 	fseek(index_file, 0, SEEK_END);
 	/* Compute number of lines = max MID */
 	if(target_mid >= ftell(index_file) / INDEX_LINE_LEN){
+		/* #2a: Send OP_NOT_ACCEPTED */
 		return close_delete(
 			send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Post doesn't exist."), 
 			0);
 	}
 
-	/* #3: Wait MW(1) */
+	/* #3: wait(MW, 1) */
 	short_semop(MW, -1);
 
-	/* #4: Wait MR(MAX_THREAD) */
+	/* #4: wait(MR, MAX_THREAD) */
 	short_semop(MR, -MAX_THREAD);
 
-	/* #5: Read info from "index file" */
+	/* #5: Read from "index file" offset and len of MID message */
 	read_mid_from_index(target_mid);
 
 	/* #6: check UID match */
