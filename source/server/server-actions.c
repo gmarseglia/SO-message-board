@@ -304,10 +304,41 @@ int delete_message(){
 	fseek(index_file, target_mid * INDEX_LINE_LEN, SEEK_SET);
 	fwrite(&DELETED_OFFSET, 1, sizeof(uint64_t), index_file);
 
-	/* #9: append in "free-areas file" (offset, len) */
+	/* #9: update "free-areas file" */
+
+	/* Cycle through the file which contains the free areas offsets */
+	size_t free_areas_file_len, read_bytes = 0;
+	uint64_t read_offset, write_offset;
+	uint32_t read_len, write_len;
+	write_offset = message_offset;
+	write_len = message_len;
+
 	fseek(free_areas_file, 0, SEEK_END);
-	fwrite(&message_offset, 1, sizeof(uint64_t), free_areas_file);
-	fwrite(&message_len, 1, sizeof(uint32_t), free_areas_file);
+	free_areas_file_len = ftell(free_areas_file);
+
+	fseek(free_areas_file, 0, SEEK_SET);
+	for(read_bytes = 0; read_bytes < free_areas_file_len; ){
+		/* Read the offset of the free area */
+		fread(&read_offset, 1, sizeof(uint64_t), free_areas_file);
+		/* Read the length in bytes of the free area */
+		fread(&read_len, 1, sizeof(uint32_t), free_areas_file);
+
+		/* Check if the free area is big enough to contain the message received */
+		if(read_offset + read_len == message_offset){
+			
+			/* New length is reduced by the bytes used by the message*/
+			write_len = read_len + message_len;
+			write_offset = read_offset;
+			break;
+		}
+
+		read_bytes += FREE_AREAS_LINE_LEN;	/* For cycle increment */
+	}
+
+	/* #7a: Update "free areas file" */
+	fseek(free_areas_file, read_bytes, SEEK_SET);
+	fwrite(&write_offset, 1, sizeof(uint64_t), free_areas_file);
+	fwrite(&write_len, 1, sizeof(uint32_t), free_areas_file);
 
 	printf("(%s, %d): deletion of post #%d accepted.\n",
 		client_ui.username, client_ui.uid, target_mid);
