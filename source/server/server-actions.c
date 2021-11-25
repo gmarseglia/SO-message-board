@@ -188,10 +188,10 @@ int read_all_messages(){
 	fseek(index_file, 0, SEEK_END);
 	max_mid = ftell(index_file) / INDEX_LINE_LEN;
 
-	/* #5: For cycle through messages to send */
+	/* #5: Cycle through messages */
 	for(mid = 0; mid < max_mid; mid++){
 
-		// #5.1: Read from "Index file": (message_offset, message_len, message_uid)
+		/* #5.1: Read from "Index file": (message_offset, message_len, message_uid) */
 		read_mid_from_index(mid);
 
 		#ifdef PRINT_DEBUG_FINE
@@ -199,8 +199,8 @@ int read_all_messages(){
 				mid, message_offset, message_len, message_uid);
 		#endif
 
+		/* Skip deleted messages */
 		if(message_offset == DELETED_OFFSET)
-			/* #5.2a: Skip deleted */
 			continue;
 
 		/* #5.2: Read from "Messages file" at message_offset: (subject, '\n', body) */
@@ -236,7 +236,7 @@ int read_all_messages(){
 
 	}	
 
-	/* #6: Send (UID_SERVER, OP_OK, NULL)	*/
+	/* #6: Send (UID_SERVER, OP_OK, NULL) */
 	if(send_operation_to(acceptfd, UID_SERVER, OP_OK, NULL) < 0)
 		return close_read_all(-1);
 
@@ -304,18 +304,21 @@ int delete_message(){
 	fseek(index_file, target_mid * INDEX_LINE_LEN, SEEK_SET);
 	fwrite(&DELETED_OFFSET, 1, sizeof(uint64_t), index_file);
 
-	/* #9: update "free-areas file" */
-
-	/* Cycle through the file which contains the free areas offsets */
+	/* #9: look for free areas ending where the message starts */
 	size_t free_areas_file_len, read_bytes = 0;
 	uint64_t read_offset, write_offset;
 	uint32_t read_len, write_len;
+
+	/* write_offset and write_len are used in the next fwrite
+	** if no free areas that end where the message starts are found
+	** then append a new free area with offset and length equals to the message */
 	write_offset = message_offset;
 	write_len = message_len;
 
 	fseek(free_areas_file, 0, SEEK_END);
 	free_areas_file_len = ftell(free_areas_file);
 
+	/* Cycle through the file which contains the free areas offsets */
 	fseek(free_areas_file, 0, SEEK_SET);
 	for(read_bytes = 0; read_bytes < free_areas_file_len; ){
 		/* Read the offset of the free area */
@@ -323,10 +326,9 @@ int delete_message(){
 		/* Read the length in bytes of the free area */
 		fread(&read_len, 1, sizeof(uint32_t), free_areas_file);
 
-		/* Check if the free area is big enough to contain the message received */
+		/* Check if the free area ends when message starts */
 		if(read_offset + read_len == message_offset){
-			
-			/* New length is reduced by the bytes used by the message*/
+			/* New length is increased by the bytes used by the message*/
 			write_len = read_len + message_len;
 			write_offset = read_offset;
 			break;
@@ -335,7 +337,7 @@ int delete_message(){
 		read_bytes += FREE_AREAS_LINE_LEN;	/* For cycle increment */
 	}
 
-	/* #7a: Update "free areas file" */
+	/* #10: Update "free areas file" */
 	fseek(free_areas_file, read_bytes, SEEK_SET);
 	fwrite(&write_offset, 1, sizeof(uint64_t), free_areas_file);
 	fwrite(&write_len, 1, sizeof(uint32_t), free_areas_file);
@@ -343,6 +345,7 @@ int delete_message(){
 	printf("(%s, %d): deletion of post #%d accepted.\n",
 		client_ui.username, client_ui.uid, target_mid);
 
+	/* #11: Send OP_OK */
 	return close_delete(send_operation_to(acceptfd, UID_SERVER, OP_OK, NULL), 1);
 }
 
@@ -363,10 +366,10 @@ int close_return(int return_value){
 }
 
 int close_read_all(int return_value){
-	// #N-1: Signal (MR, 1)
+	/* #N-1: Signal (MR, 1) */
 	short_semop(MR, 1);
 
-	// Close files
+	/* Close files */
 	buffers = NULL;
 	return close_return(return_value);
 }
@@ -375,10 +378,10 @@ int close_delete(int return_value, char semaphores){
 	buffers = NULL;
 
 	if(semaphores == 1){
-		// #N-2: signal(MR, MAX_THREAD)
+		/* #N-2: signal(MR, MAX_THREAD) */
 		short_semop(MR, MAX_THREAD);
 
-		// #N-1: signal(MW, 1)
+		/* #N-1: signal(MW, 1) */
 		short_semop(MW, 1);
 	}
 
