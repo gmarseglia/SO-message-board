@@ -17,6 +17,10 @@ char action_code;
 char *action_name;
 
 int login_registration(){
+
+	// Allow SIGINT
+	pthread_sigmask(SIG_SETMASK, &sigset_sigint_allowed, NULL);
+
 	while(1){
 		// 'R' for registration, 'L' for login
 		printf("\n(L)ogin or (R)egistration?\n");
@@ -29,19 +33,13 @@ int login_registration(){
 
 	// Ask the user to type username and passwd
 	user_info_fill(&client_ui);
+
+	// Block all signals
+	pthread_sigmask(SIG_SETMASK, &sigset_all_blocked, NULL);
+
 	op.text = calloc(sizeof(char), snprintf(op.text, 0, "%s %s", client_ui.username, client_ui.passwd));
 	if(op.text == NULL) perror_and_failure("on op.text calloc()", __func__);
 	snprintf(op.text, MAXSIZE_USERNAME + MAXSIZE_PASSWD, "%s %s", client_ui.username, client_ui.passwd);
-
-	// Create the socket
-	//	done here because on registration or login error, the socket gets closed
-	sockfd = socket(AF_INET, SOCK_STREAM, 0);
-	if(sockfd < 0) perror_and_failure("socket()", __func__);
-
-	// Connect to server
-	if(connect(sockfd, (struct sockaddr *)&addr, sizeof(struct sockaddr)) < 0) perror_and_failure("connect()", __func__);
-
-	printf("Connected.\n");
 
 	op.uid = UID_ANON;
 	op.code = (action_code == ACTION_LOGIN) ? OP_LOG : OP_REG;
@@ -50,9 +48,17 @@ int login_registration(){
 		return -1;
 	free(op.text);
 
+	// Allow SIGINT
+	pthread_sigmask(SIG_SETMASK, &sigset_sigint_allowed, NULL);
+
 	printf("Waiting for server response.\n");
 
-	if(receive_operation_from_2(sockfd, &op) < 0)
+	int receive_return = receive_operation_from_2(sockfd, &op);
+
+	// Block signals
+	pthread_sigmask(SIG_SETMASK, &sigset_all_blocked, NULL);
+
+	if(receive_return < 0)
 		return -1;
 
 	if(op.uid == UID_SERVER && op.code == OP_OK){

@@ -33,6 +33,9 @@ int post_message(){
 		free(body);
 	}
 
+	// Block signals
+	pthread_sigmask(SIG_SETMASK, &sigset_all_blocked, NULL);
+
 	#ifdef PRINT_DEBUG_FINE
 	printf("BEGIN%s\n%s(%d) is sending:\n%s\n%s\n%s\n%s\n%sEND\n", SEP, client_ui.username, client_ui.uid, SEP,
 		subject, SEP, body, SEP);
@@ -46,7 +49,6 @@ int post_message(){
 
 	// #4: Receive (UID_SERVER, OP_OK, ID of the message)
 	operation_t op;
-
 	if(receive_operation_from_2(sockfd, &op) < 0)
 		return -1;
 
@@ -74,6 +76,9 @@ int read_all_messages(){
 	char *read_username, *subject, *body;
 	size_t before_body_len;
 	operation_t op;
+
+	// Block signals
+	pthread_sigmask(SIG_SETMASK, &sigset_all_blocked, NULL);
 
 	if(send_operation_to(sockfd, client_ui.uid, OP_READ_REQUEST, NULL) < 0)
 		return -1;
@@ -118,6 +123,9 @@ int delete_message(){
 	printf("Which post do you want to delete?\n");
 	while(scanf("%d", &target_mid) == 0)
 		fflush(stdin);
+
+	// Block signals
+	pthread_sigmask(SIG_SETMASK, &sigset_all_blocked, NULL);
 
 	// #2: Send delete request to server
 	printf("Asking server to delete post #%d\n", target_mid);

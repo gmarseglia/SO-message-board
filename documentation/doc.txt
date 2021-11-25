@@ -25,3 +25,6 @@ Snprintf:
 
 __func__:
 	https://stackoverflow.com/questions/15349761/get-called-function-name-as-string
+
+Bitmask:
+	// https://www.learn-c.org/en/Bitmasks
