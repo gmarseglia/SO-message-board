@@ -96,13 +96,14 @@ void user_info_fill(user_info_t* client_ui){
 	char *clear_passwd;
 
 	/* Asks user to type username */
-	printf("Type username:\n");
 	while(1){
+		printf("Type username:\n");
 		scanf("%ms", &(client_ui->username));
 		if(client_ui->username == NULL)
 			continue;
 		if(strlen(client_ui->username) > MAXSIZE_USERNAME){	/* Max length check */
 			printf("Username too long: max size is %d\n", MAXSIZE_USERNAME);
+			free(client_ui->username);
 			continue;
 		}
 		fflush(stdin);
@@ -110,13 +111,14 @@ void user_info_fill(user_info_t* client_ui){
 	}
 
 	/* Asks user to type passwd */
-	printf("Type password:\n");
 	while(1){
+		printf("Type password:\n");
 		scanf("%ms", &clear_passwd);
 		if(clear_passwd == NULL)
 			continue;
 		if(strlen(clear_passwd) > MAXSIZE_PASSWD){
 			printf("Passord too long: max size is %d\n", MAXSIZE_PASSWD);
+			free(clear_passwd);
 			continue;
 		}
 		fflush(stdin);
