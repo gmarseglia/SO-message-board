@@ -26,7 +26,6 @@
 	**	RETURN
 	**		0 in case of success
 	**		-1 in case of unsuccess
-	**		exit(EXIT_FAILURE) in case of error
 	*/
 	int login_registration();
 
@@ -48,25 +47,27 @@
 	**
 	**	RETURN VALUE
 	**		0 in case of success
-	**		-1 in case of error
+	**		-1 in case of error (no more operation are possible)
 	*/
 	int post_message();
 
 	/*
-		DESCRIPTION:
-			Read all the post on server
-		RETURNS:
-			0 in case of success
-			-1 in case of error
+	**	DESCRIPTION
+	**		Read all the post on server
+	**
+	**	RETURN VALUE
+	**		0 in case of success
+	**		-1 in case of error (no more operation are possible)
 	*/
 	int read_all_messages();
 
 	/*
-		DESCRIPTION:
-			Ask the server to delete a post
-		RETURNS_
-			0 in case of success
-			-1 in case of error
+	**	DESCRIPTION
+	**		Ask the server to delete a post
+	**
+	**	RETURN VALUE
+	**		0 in case of success
+	**		-1 in case of error (no more operation are possible)
 	*/
 	int delete_message();
 

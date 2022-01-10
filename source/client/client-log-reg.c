@@ -4,10 +4,10 @@
 #define ACTION_LOGIN 'L'
 #define ACTION_REGISTER 'R'
 
-
 /*
-	DESCRIPTION:
-		Fill with username and password client_ui
+**	DESCRIPTION
+**		Fill with username and password client_ui
+**		checks for max length
 */
 void user_info_fill(user_info_t* client_ui);
 
@@ -34,9 +34,10 @@ int login_registration(){
 	// Ask the user to type username and passwd
 	user_info_fill(&client_ui);
 
-	// Block all signals
+	/* Once the user has typed username and password, signals are blocked */
 	pthread_sigmask(SIG_SETMASK, &sigset_all_blocked, NULL);
 
+	/* Put username and password into a single string*/
 	op.text = calloc(sizeof(char), snprintf(op.text, 0, "%s %s", client_ui.username, client_ui.passwd));
 	if(op.text == NULL) perror_and_failure("on op.text calloc()", __func__);
 	snprintf(op.text, MAXSIZE_USERNAME + MAXSIZE_PASSWD, "%s %s", client_ui.username, client_ui.passwd);
@@ -44,6 +45,7 @@ int login_registration(){
 	op.uid = UID_ANON;
 	op.code = (action_code == ACTION_LOGIN) ? OP_LOG : OP_REG;
 
+	/* Send the operation for login or registration to server */
 	if(send_operation_to_2(sockfd, op) < 0)
 		return -1;
 	free(op.text);
@@ -53,14 +55,20 @@ int login_registration(){
 
 	printf("Waiting for server response.\n");
 
+	/* Awaits response from server
+		Signals are allowed, so user can close the client */
 	int receive_return = receive_operation_from_2(sockfd, &op);
 
-	// Block signals
+	/* Once the response is arrived, the signals are blocked again
+		to ensure the correct completion of login or registration */
 	pthread_sigmask(SIG_SETMASK, &sigset_all_blocked, NULL);
 
+	/* receive_return < 0 means no response is arrived 
+		matbe the server went down */
 	if(receive_return < 0)
 		return -1;
 
+	/* If operation code is OP_OK, then login or registration are successful */
 	if(op.uid == UID_SERVER && op.code == OP_OK){
 		client_ui.uid = strtol(op.text, NULL, 10);
 		free(op.text);
@@ -68,10 +76,12 @@ int login_registration(){
 		return 0;
 	}
 
+	/* If operation code is OP_NOT_ACCEPTED, then login or registration are unsuccessful
+		and the explenation is in the operation text */
 	if(op.uid == UID_SERVER && op.code == OP_NOT_ACCEPTED){
 		printf("%s unsuccessful: %s\n", action_name, op.text);
 		free(op.text);
-	} else {
+	} else {	/* Unexpected UID or code */
 		fprintf(stderr, "Unexpected error during %s.\nUID=%d, code=%c\n", action_name, op.uid, op.code);
 		free(op.text);
 	}
@@ -85,12 +95,13 @@ void user_info_fill(user_info_t* client_ui){
 	const int increment = 14;
 	char *clear_passwd;
 
+	/* Asks user to type username */
 	printf("Type username:\n");
 	while(1){
 		scanf("%ms", &(client_ui->username));
 		if(client_ui->username == NULL)
 			continue;
-		if(strlen(client_ui->username) > MAXSIZE_USERNAME){
+		if(strlen(client_ui->username) > MAXSIZE_USERNAME){	/* Max length check */
 			printf("Username too long: max size is %d\n", MAXSIZE_USERNAME);
 			continue;
 		}
@@ -98,6 +109,7 @@ void user_info_fill(user_info_t* client_ui){
 		break;
 	}
 
+	/* Asks user to type passwd */
 	printf("Type password:\n");
 	while(1){
 		scanf("%ms", &clear_passwd);
@@ -108,6 +120,7 @@ void user_info_fill(user_info_t* client_ui){
 			continue;
 		}
 		fflush(stdin);
+		/* Encrypt passwd */
 		client_ui->passwd = caesar_cipher_2(clear_passwd, amount, increment);
 		break;
 	}
