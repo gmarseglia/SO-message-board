@@ -21,9 +21,21 @@ int login_registration(){
 	// Allow SIGINT
 	pthread_sigmask(SIG_SETMASK, &sigset_sigint_allowed, NULL);
 
+	if(send_operation_to(sockfd, UID_ANON, OP_OK, NULL) < 0)
+		return -1;
+
+	printf("Waiting in queue for free server slot...\n");
+
+	if(receive_operation_from_2(sockfd, &op) < 0 || op.code != OP_OK){
+		printf("Could not complete handshake.\n\n");
+		return -1;
+	}
+
+	printf("Handshake complete.\n\n");
+
 	while(1){
 		// 'R' for registration, 'L' for login
-		printf("\n(L)ogin or (R)egistration?\n");
+		printf("(L)ogin or (R)egistration?\n");
 		scanf("%c", &action_code);
 		fflush(stdin);
 		if(action_code == ACTION_LOGIN || action_code == ACTION_REGISTER) break;
@@ -53,7 +65,7 @@ int login_registration(){
 	// Allow SIGINT
 	pthread_sigmask(SIG_SETMASK, &sigset_sigint_allowed, NULL);
 
-	printf("Waiting for server response.\n");
+	printf("Waiting for server response...\n");
 
 	/* Awaits response from server
 		Signals are allowed, so user can close the client */
@@ -72,17 +84,17 @@ int login_registration(){
 	if(op.uid == UID_SERVER && op.code == OP_OK){
 		client_ui.uid = strtol(op.text, NULL, 10);
 		free(op.text);
-		printf("%s successful.\n", action_name);
+		printf("%s successful.\n\n", action_name);
 		return 0;
 	}
 
 	/* If operation code is OP_NOT_ACCEPTED, then login or registration are unsuccessful
 		and the explenation is in the operation text */
 	if(op.uid == UID_SERVER && op.code == OP_NOT_ACCEPTED){
-		printf("%s unsuccessful: %s\n", action_name, op.text);
+		printf("%s unsuccessful: %s\n\n", action_name, op.text);
 		free(op.text);
 	} else {	/* Unexpected UID or code */
-		fprintf(stderr, "Unexpected error during %s.\nUID=%d, code=%c\n", action_name, op.uid, op.code);
+		fprintf(stderr, "Unexpected error during %s.\nUID=%d, code=%c\n\n", action_name, op.uid, op.code);
 		free(op.text);
 	}
 

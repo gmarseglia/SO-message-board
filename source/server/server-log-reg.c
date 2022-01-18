@@ -7,6 +7,7 @@ const int increment = 20;
 extern __thread int acceptfd;
 extern __thread user_info_t client_ui;
 extern __thread operation_t op;
+extern __thread int id;
 
 __thread int read_uid;
 __thread char read_op;
@@ -39,6 +40,29 @@ int login();
 // ------------------------------------------------------------
 
 int login_registration(){
+
+	#ifdef PRINT_DEBUG_FINE
+		printf("Thread[%d]: Waiting for client handshake.\n", id);
+	#endif
+
+	/* #0: Receive OP_HELLO and reply with OP_OK */
+	if(receive_operation_from_2(acceptfd, &op) < 0)
+		return -1;
+
+	#ifdef PRINT_DEBUG_FINE
+		printf("Thread[%d]: Replying to client handshake.\n", id);
+	#endif
+
+	if(op.code != OP_OK || op.uid != UID_ANON){
+		send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED,
+			"Incorrect handshake. Expected OP_OK.");
+		return -1;
+	} else {
+		if(send_operation_to(acceptfd, UID_SERVER, OP_OK, NULL) < 0)
+			return -1;
+		printf("Thread[%d]: Handshake complete.\n", id);
+	}
+
 	/* #1: Receive (username, passwd) */
 	if(receive_operation_from_2(acceptfd, &op) < 0)
 		return -1;
@@ -133,6 +157,8 @@ int registration(){
 	sprintf(uid_str, "%d", client_ui.uid);
 	if(send_operation_to(acceptfd, UID_SERVER, OP_OK, uid_str) < 0)
 		return -1;
+
+	printf("Thread[%d]: (%s, %d) registered successfully.\n", id,  client_ui.username, client_ui.uid);
 
 	return 0;
 }

@@ -39,11 +39,12 @@ int main(int argc, const char *argv[]){
 	/* Setup the struct for server address */
 	sockaddr_in_setup(&addr, ip_address, port);
 
-	printf("Server address is %s:%d\n",
+	printf("Server address is %s:%d\n\n",
 		inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 
 	/* Signal handling */
 	sigfillset(&sigset_all_blocked);
+	pthread_sigmask(SIG_SETMASK, NULL, &sigset_sigint_allowed);
 
 	/* The handler is very simple, needs only to close socket and exit */
 	struct sigaction actual_sigaction = {.sa_handler = close_connenction_and_exit, .sa_mask = sigset_all_blocked};
@@ -53,20 +54,21 @@ int main(int argc, const char *argv[]){
 	pthread_sigmask(SIG_BLOCK, &sigset_all_blocked, &sigset_sigint_allowed);
 
 	/* Client needs to register or login before being able to send message */
-	char first_connection = 1;
 	while(1){
 		/* Create the socket */
 		sockfd = socket(AF_INET, SOCK_STREAM, 0);
 		if(sockfd < 0) perror_and_failure("socket()", __func__);
 
-		/* Connect to server */
-		if(connect(sockfd, (struct sockaddr *)&addr, sizeof(struct sockaddr)) < 0) perror_and_failure("connect()", __func__);
+		printf("Waiting for server connection...\n");
 
-		/* This part ensures that only the first time that the client connects the application print the message */
-		if(first_connection){ 
-			printf("Connected.\n");
-			first_connection = 0;	
-		}
+		/* Connect to server */
+		if(connect(sockfd, (struct sockaddr *)&addr, sizeof(struct sockaddr)) < 0){
+			if(errno != ECONNREFUSED) perror_and_failure("connect()", __func__);
+			printf("Could not connect to server. Quitting.\n");
+			exit(0);
+		} 
+
+		printf("Connected.\n\n");
 
 		/* Break cycle if login or registration are successful */
 		if(login_registration() == 0) break;
