@@ -23,6 +23,8 @@ int main(int argc, char const *argv[]){
 
 	printf("Server active.\n");
 
+	printf("MAX_THREAD = %d, MAX_BACKLOG = %d\n", MAX_THREAD, MAX_BACKLOG);
+
 	/* Print the ip address in current network	*/
 	system("hostname -I | awk \'{print $1}\'");
 

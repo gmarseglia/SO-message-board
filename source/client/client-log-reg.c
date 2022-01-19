@@ -16,14 +16,46 @@ operation_t op;
 char action_code;
 char *action_name;
 
-int login_registration(){
+/*
+	// Block all signals
+	pthread_sigmask(SIG_BLOCK, &sigset_all_blocked, &sigset_sigint_allowed);
+	// or
+	pthread_sigmask(SIG_SETMASK, &sigset_all_blocked, NULL);
 
 	// Allow SIGINT
 	pthread_sigmask(SIG_SETMASK, &sigset_sigint_allowed, NULL);
+*/
 
+int login_registration(){
+
+	/* Block signals while sending operation */
+	pthread_sigmask(SIG_SETMASK, &sigset_all_blocked, NULL);
+
+	/* #1: Send operation to start handshake
+		Send OP_OK to start handshake */
+	if(send_operation_to(sockfd, UID_ANON, OP_OK, NULL) < 0)
+		return -1;
+
+	/* Unlock signals after send */
+	pthread_sigmask(SIG_SETMASK, &sigset_sigint_allowed, NULL);
+
+	printf("Waiting in queue for free server slot...\n");
+
+	/* #2: Wait server response to end handshake
+		(UID_SERVER, OP_OK, *) is required */
+	if(receive_operation_from_2(sockfd, &op) < 0
+		|| op.code != OP_OK || op.uid != UID_SERVER){
+		printf("Could not complete handshake.\n\n");
+		/* Login or Registration failed */
+		return -1;
+	}
+
+	printf("Handshake complete.\n\n");
+
+	/* #3: Ask user if Login or Registration */
 	while(1){
 		// 'R' for registration, 'L' for login
-		printf("\n(L)ogin or (R)egistration?\n");
+		printf("(L)ogin or (R)egistration?\n");
 		scanf("%c", &action_code);
 		fflush(stdin);
 		if(action_code == ACTION_LOGIN || action_code == ACTION_REGISTER) break;
@@ -31,11 +63,8 @@ int login_registration(){
 	}
 	action_name = (action_code == ACTION_LOGIN) ? "Login" : "Registration";
 
-	// Ask the user to type username and passwd
+	/* #4: Ask user info */
 	user_info_fill(&client_ui);
-
-	/* Once the user has typed username and password, signals are blocked */
-	pthread_sigmask(SIG_SETMASK, &sigset_all_blocked, NULL);
 
 	/* Put username and password into a single string*/
 	op.text = calloc(sizeof(char), snprintf(op.text, 0, "%s %s", client_ui.username, client_ui.passwd));
@@ -45,47 +74,43 @@ int login_registration(){
 	op.uid = UID_ANON;
 	op.code = (action_code == ACTION_LOGIN) ? OP_LOG : OP_REG;
 
-	/* Send the operation for login or registration to server */
+	/* Pre-send block */
+	pthread_sigmask(SIG_SETMASK, &sigset_all_blocked, NULL);
+
+	/* #5: Send operation with user info
+		(UID_ANON, OP_LOG | OP_REG, "username passwd") */
 	if(send_operation_to_2(sockfd, op) < 0)
 		return -1;
 	free(op.text);
 
-	// Allow SIGINT
+	/* After-send unlock */
 	pthread_sigmask(SIG_SETMASK, &sigset_sigint_allowed, NULL);
 
-	printf("Waiting for server response.\n");
+	printf("Waiting for server response...\n");
 
-	/* Awaits response from server
-		Signals are allowed, so user can close the client */
-	int receive_return = receive_operation_from_2(sockfd, &op);
-
-	/* Once the response is arrived, the signals are blocked again
-		to ensure the correct completion of login or registration */
-	pthread_sigmask(SIG_SETMASK, &sigset_all_blocked, NULL);
-
-	/* receive_return < 0 means no response is arrived 
-		matbe the server went down */
-	if(receive_return < 0)
+	/* #6: Receive response */
+	if(receive_operation_from_2(sockfd, &op) < 0)
 		return -1;
 
-	/* If operation code is OP_OK, then login or registration are successful */
+	/* If (UID_SERVER, OP_OK, *) then Login or Registration are successful */
 	if(op.uid == UID_SERVER && op.code == OP_OK){
 		client_ui.uid = strtol(op.text, NULL, 10);
 		free(op.text);
-		printf("%s successful.\n", action_name);
+		printf("%s successful.\n\n", action_name);
 		return 0;
 	}
 
-	/* If operation code is OP_NOT_ACCEPTED, then login or registration are unsuccessful
+	/* If (UID_SERVER, OP_NOT_ACCEPTED, *) then login or registration are unsuccessful
 		and the explenation is in the operation text */
 	if(op.uid == UID_SERVER && op.code == OP_NOT_ACCEPTED){
-		printf("%s unsuccessful: %s\n", action_name, op.text);
+		printf("%s unsuccessful: %s\n\n", action_name, op.text);
 		free(op.text);
 	} else {	/* Unexpected UID or code */
-		fprintf(stderr, "Unexpected error during %s.\nUID=%d, code=%c\n", action_name, op.uid, op.code);
+		fprintf(stderr, "Unexpected error during %s.\nUID=%d, code=%c\n\n", action_name, op.uid, op.code);
 		free(op.text);
 	}
 
+	/* Login or Registration failed */
 	return -1;
 }
 
