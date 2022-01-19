@@ -7,22 +7,23 @@
 int post_message(){
 	char *post_buffer, *body = NULL;
 	size_t len_buffer = 0;
+	operation_t op;
 
-	/* #1: Ask to user the Subject */
+	/* #1: Ask user the Subject */
 	printf("Insert the Subject of the message:\n");
 	do {
 		scanf("%m[^\n]", &post_buffer);	/* The subject is stored in post_buffer */
 		fflush(stdin);
 	} while (post_buffer == NULL);
 
-	/* #2: Ask to user the Body
+	/* #2: Ask user the Body
 		The body is a multiline string */
 	printf("Insert the Body of the message, double new line to end:\n");
 	while(1){
 		scanf("%m[^\n]", &body);	/* The newest line is stored in body */
 		fflush(stdin);
 
-		if(body == NULL){
+		if(body == NULL){	/* Double new line recognition */
 			if(len_buffer == 0) continue;
 			break;
 		}
@@ -40,10 +41,7 @@ int post_message(){
 		free(body);
 	}
 
-	/* #3: Block signals
-		Once the subject and the body are given, the signals are blocked
-		to ensure the correct completion of the post action
-		signals will be re-allowed by dispatcher() */
+	/* Pre-send block */
 	pthread_sigmask(SIG_SETMASK, &sigset_all_blocked, NULL);
 
 	#ifdef PRINT_DEBUG_FINE
@@ -51,36 +49,37 @@ int post_message(){
 		subject, SEP, body, SEP);
 	#endif
 
-	// #4: Send (UID, OP_MSG, Subject and Body)
+	/* #3: Send operation with message */
 	if(send_operation_to(sockfd, client_ui.uid, OP_MSG, post_buffer) < 0){
 		free(post_buffer);
 		return -1;
 	}
 
-	// #5: Awaits server response
-	operation_t op;
+	/* After-send unlock */
+	pthread_sigmask(SIG_SETMASK, &sigset_sigint_allowed, NULL);
+
+	/* #4: Receive response */
 	if(receive_operation_from_2(sockfd, &op) < 0)
 		return -1;
 
-	/* If operation code is OP_OK, then post was successful, do */
+	/* If (UID_SERVER, OP_OK, *) then action was successful and ends correctly */
 	if(op.uid == UID_SERVER && op.code == OP_OK){
-		/* #6: Returns 0 */
 		printf("Post #%s sent.\n\n", op.text);
 		free(op.text);
 		return 0;
 	}
 
-	/*	If operation code is OP_NOT_ACCEPTED,
-		then post was refused but further operations are possible, do */
+	/*	If (UID_SERVER, OP_NOT_ACCEPTED, text)
+			then post was refused but further operations are possible,
+			so action ends correctly */
 	if(op.uid == UID_SERVER && op.code == OP_NOT_ACCEPTED){
-		/* #6: Returns 0 */
 		printf("Post refused: %s\n", op.text);
 		free(op.text);
 		return 0;
 	}
-	/* If operation code is unexpected, then no further are possible, do */
+	/* If operation code is unexpected, then no further are possible,
+		so action ends not correctly */
 	else {
-		/* #6a: returns -1 */
 		fprintf(stderr, "Unknown error. Exiting.\n");
 		print_operation(&op);
 		free(op.text);
@@ -94,17 +93,21 @@ int read_all_messages(){
 	size_t before_body_len;
 	operation_t op;
 
-	/* #1: Block signals */
+	/* Pre-send block */
 	pthread_sigmask(SIG_SETMASK, &sigset_all_blocked, NULL);
 
-	/* #2: Send server the read all request */
+	/* #1: Send operation with the read all request */
 	if(send_operation_to(sockfd, client_ui.uid, OP_READ_REQUEST, NULL) < 0)
 		return -1;
 
+	/* After-send unlock */
+	pthread_sigmask(SIG_SETMASK, &sigset_sigint_allowed, NULL);
+
 	printf("\nPosts:\n\n");
 
-	/* Server will send an operation for each message, do
-		#3: read message response until OP_OK */
+	/* #2: Read message response * until OK, and print messages 
+		Server will send OP_READ_RESPONSE with messages,
+		server will end with OP_OK */
 	while(receive_operation_from_2(sockfd, &op) == 0){
 		switch(op.code){
 			case OP_READ_RESPONSE:
@@ -121,13 +124,20 @@ int read_all_messages(){
 
 				free(op.text);
 				break;
+
+			/* If last operation's code is OP_OK, then action ends correctly */
 			case OP_OK:
 				printf("Done.\n\n");
 				return 0;
+
+			/* If last operation's code is OP_NOT_ACCEPTED, then the request was denied,
+				but further actions are possible so action ends correctly */	
 			case OP_NOT_ACCEPTED:
 				printf("Read request refused: %s\n", op.text);
 				free(op.text);
 				return 0;
+
+			/* If unexpected code, then action ends not correctly */
 			default:
 				printf("Unknown error.");
 				print_operation(&op);
@@ -135,7 +145,8 @@ int read_all_messages(){
 		}
 	}
 
-	/* If last operation's code is OP_READ_RESPONSE, then there is a fatal error */
+	/* If last operation's code is OP_READ_RESPONSE, then there is a fatal error
+		and action ends not correctly */
 	return -1;
 }
 
@@ -145,34 +156,43 @@ int delete_message(){
 
 	operation_t op;
 
-	// #1: Ask user which post to delete
+	/* #1: Ask user which post to delete */
 	printf("Which post do you want to delete?\n");
 	while(scanf("%d", &target_mid) == 0)
 		fflush(stdin);
 
-	// #2: Block signals
-	pthread_sigmask(SIG_SETMASK, &sigset_all_blocked, NULL);
-
-	// #3: Send delete request to server
-	printf("Asking server to delete post #%d\n", target_mid);
 	sprintf(target_mid_str, "%d", target_mid);
 
+	printf("Asking server to delete post #%d\n", target_mid);
+
+	/* Pre-send block */
+	pthread_sigmask(SIG_SETMASK, &sigset_all_blocked, NULL);
+
+	/* #2: Send operation with delete request */
 	if(send_operation_to(sockfd, client_ui.uid, OP_DELETE_REQUEST, target_mid_str) < 0)
 		return -1;
 
-	// #4: Wait server response
+	/* After-send unlock */
+	pthread_sigmask(SIG_SETMASK, &sigset_sigint_allowed, NULL);
+
+	/* #3: Receive response */
 	if(receive_operation_from_2(sockfd, &op) < 0)
 		return -1;
 
-	// #5: Check operation_t result
+	/* If (UID_SERVER, OP_OK, *) then deletion successful and action ends correctly */
 	if(op.uid == UID_SERVER && op.code == OP_OK){
 		printf("Post #%d deleted successfully.\n\n", target_mid);
 		return 0;
-	} else if (op.uid == UID_SERVER && op.code == OP_NOT_ACCEPTED){
+	}
+	/* If (UID_SERVER, OP_NOT_ACCEPTED, text) then deletion was denied,
+		but further actions are possible so action ends correctly */
+	else if (op.uid == UID_SERVER && op.code == OP_NOT_ACCEPTED){
 		printf("Post #%d not deleted: %s.\n\n", target_mid, op.text);
 		free(op.text);
 		return 0;
-	} else {
+	} 
+	/* If unknown code, then action ends not correctly */
+	else {
 		fprintf(stderr, "Unknown Error in Client on delete_post()\n");
 		print_operation(&op);
 		free(op.text);
