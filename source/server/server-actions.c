@@ -305,7 +305,7 @@ int delete_message(){
 	fseek(index_file, target_mid * INDEX_LINE_LEN, SEEK_SET);
 	fwrite(&DELETED_OFFSET, 1, sizeof(uint64_t), index_file);
 
-	/* #9: look for free areas ending where the message starts */
+	/* #9: Look for free areas adjacent to the message */
 	size_t free_areas_file_len, read_bytes = 0;
 	uint64_t read_offset, write_offset;
 	uint32_t read_len, write_len;
