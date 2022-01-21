@@ -1,6 +1,7 @@
 #include "server.h"
 
 const uint64_t DELETED_OFFSET = 0xffffffffffffffff;
+/* const uint64_t DELETED_LEN = 	0xffffffff; */
 
 extern __thread int acceptfd;
 extern __thread user_info_t client_ui;
@@ -108,8 +109,8 @@ int post_message(){
 		/* Read the length in bytes of the free area */
 		fread(&read_len, 1, sizeof(uint32_t), free_areas_file);
 
-		/* Check if the free area is big enough to contain the message received */
-		if(read_len >= message_len){
+		/* Check if free area is valid and big enough to contain the message received*/
+		if(read_offset != DELETED_OFFSET && read_len >= message_len){
 			message_offset = read_offset;	/* Update the offset */
 
 			/* #7a: Update "free areas file" */
@@ -309,6 +310,11 @@ int delete_message(){
 	uint64_t read_offset, write_offset;
 	uint32_t read_len, write_len;
 
+	char before_found = 0, after_found = 0, empty_found = 0;
+	uint64_t before_position, after_position, empty_position;
+	uint64_t before_offset, after_offset, empty_offset;
+	uint32_t before_len, after_len;
+
 	/* write_offset and write_len are used in the next fwrite
 	** if no free areas that end where the message starts are found
 	** then append a new free area with offset and length equals to the message */
@@ -320,35 +326,97 @@ int delete_message(){
 
 	/* Cycle through the file which contains the free areas offsets */
 	fseek(free_areas_file, 0, SEEK_SET);
-	for(read_bytes = 0; read_bytes < free_areas_file_len; ){
+	for(read_bytes = 0; read_bytes < free_areas_file_len; read_bytes += FREE_AREAS_LINE_LEN){
+
+		/* If both areas before and after are found, then break */
+		if(before_found == 1 && after_found == 1 && empty_found == 1)
+			break;
+
 		/* Read the offset of the free area */
 		fread(&read_offset, 1, sizeof(uint64_t), free_areas_file);
 		/* Read the length in bytes of the free area */
 		fread(&read_len, 1, sizeof(uint32_t), free_areas_file);
 
 		/* Check if the free area ends when message starts */
-		if(read_offset + read_len == message_offset){
-			/* New offset in the free area offset */
-			write_offset = read_offset;
-			/* New length is increased by the bytes used by the message*/
-			write_len = read_len + message_len;
-			break;
+		if(before_found == 0 && read_offset + read_len == message_offset){
+			/* Save the offset and the len of the free area found */
+			before_offset = read_offset;
+			before_len = read_len;
+			before_position = read_bytes;
+			before_found = 1;
+			continue;
 		}
 
 		/* Check if the free are starts when message ends */
-		if(message_offset + message_len == read_offset){
-			/* New offset is the message offset */
-			write_offset = message_offset;
-			/* New len is the combined length */
-			write_len = message_len + read_len;
-			break;
+		if(after_found == 0 && message_offset + message_len == read_offset){
+			/* Save the offset and the len of the free area found */
+			after_offset = read_offset;
+			after_len = read_len;
+			after_position = read_bytes;
+			after_found = 1;
+			continue;
 		}
 
-		read_bytes += FREE_AREAS_LINE_LEN;	/* For cycle increment */
+		/* Check if the free area is already deleted */
+		if(read_offset == DELETED_OFFSET){
+			/* Save the offset and the len of the free area found */
+			empty_offset = read_offset;
+			empty_position = read_bytes;
+			empty_found = 1;
+			continue;
+		}
 	}
 
+	/*
+	printf(
+		"before_found=%d, before_position=%ld before_offset=%ld, before_len=%d\nafter_found=%d, after_position=%ld, after_offset=%ld, after_len=%d\n empty_found=%d, empty_position=%ld, empty_offset=%ld\n",
+		before_found, before_position, before_offset, before_len,
+		after_found, after_position, after_offset, after_len,
+		empty_found, empty_position, empty_offset);
+	/*
+
+	/* No adjacent free areas found */
+	if(before_found == 0 && after_found == 0){
+		write_offset = message_offset;
+		write_len = message_len;
+		if(empty_found == 0){
+			fseek(free_areas_file, 0, SEEK_END);
+		} else {
+			fseek(free_areas_file, empty_position, SEEK_SET);
+		}
+	}
+
+	/* Only free area before found */
+	else if(before_found == 1 && after_found == 0) {
+		write_offset = before_offset;
+		write_len = before_len + message_len;
+		fseek(free_areas_file, before_position, SEEK_SET);
+	}
+
+	/* Only free area after found */
+	else if(before_found == 0 && after_found == 1) {
+		write_offset = message_offset;
+		write_len = message_len + after_len;
+		fseek(free_areas_file, after_position, SEEK_SET);
+	}
+
+	/* Both areas before and after found */
+	else if(before_found == 1 && after_found == 1){
+		/* Delete the free area after */
+		fseek(free_areas_file, after_position, SEEK_SET);
+		fwrite(&DELETED_OFFSET, 1, sizeof(uint64_t), free_areas_file);
+
+		write_offset = before_offset;
+		write_len = before_len + message_len + after_len;
+		fseek(free_areas_file, before_position, SEEK_SET);
+	}
+
+	/*
+	printf("write_offset=%ld, write_len=%d, now at position=%ld\n",
+		write_offset, write_len, ftell(free_areas_file));
+	*/
+
 	/* #10: Update "free areas file" */
-	fseek(free_areas_file, read_bytes, SEEK_SET);
 	fwrite(&write_offset, 1, sizeof(uint64_t), free_areas_file);
 	fwrite(&write_len, 1, sizeof(uint32_t), free_areas_file);
 
