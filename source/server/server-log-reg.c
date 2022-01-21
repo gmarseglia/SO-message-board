@@ -57,7 +57,8 @@ int login_registration(){
 		(UID_SERVER, OP_OK, NULL) */
 	if(send_operation_to(acceptfd, UID_SERVER, OP_OK, NULL) < 0)
 		return -1;
-		printf("Thread[%d]: Handshake complete.\n", id);
+	
+	printf("Thread[%d]: Handshake complete.\n", id);
 
 	/* #3: Receive operation with mode and user info */
 	if(receive_operation_from_2(acceptfd, &op) < 0)
