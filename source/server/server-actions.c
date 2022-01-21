@@ -328,9 +328,19 @@ int delete_message(){
 
 		/* Check if the free area ends when message starts */
 		if(read_offset + read_len == message_offset){
+			/* New offset in the free area offset */
+			write_offset = read_offset;
 			/* New length is increased by the bytes used by the message*/
 			write_len = read_len + message_len;
-			write_offset = read_offset;
+			break;
+		}
+
+		/* Check if the free are starts when message ends */
+		if(message_offset + message_len == read_offset){
+			/* New offset is the message offset */
+			write_offset = message_offset;
+			/* New len is the combined length */
+			write_len = message_len + read_len;
 			break;
 		}
 
