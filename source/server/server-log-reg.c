@@ -41,35 +41,32 @@ int login();
 
 int login_registration(){
 
-	#ifdef PRINT_DEBUG_FINE
-		printf("Thread[%d]: Waiting for client handshake.\n", id);
-	#endif
-
-	/* #0: Receive OP_HELLO and reply with OP_OK */
+	/* #1: Receive operation to start handshake */
 	if(receive_operation_from_2(acceptfd, &op) < 0)
 		return -1;
 
-	#ifdef PRINT_DEBUG_FINE
-		printf("Thread[%d]: Replying to client handshake.\n", id);
-	#endif
-
+	/* Op (UID_ANON, OP_OK, *) is required */
 	if(op.code != OP_OK || op.uid != UID_ANON){
+		/* Send OP (UID_SERVER, OP_NOT_ACCEPTED, txt) if Client sent uncorrect operation */
 		send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED,
 			"Incorrect handshake. Expected OP_OK.");
 		return -1;
-	} else {
-		if(send_operation_to(acceptfd, UID_SERVER, OP_OK, NULL) < 0)
-			return -1;
-		printf("Thread[%d]: Handshake complete.\n", id);
 	}
 
-	/* #1: Receive (username, passwd) */
+	/* #2: Send operation to complete handshake 
+		(UID_SERVER, OP_OK, NULL) */
+	if(send_operation_to(acceptfd, UID_SERVER, OP_OK, NULL) < 0)
+		return -1;
+		printf("Thread[%d]: Handshake complete.\n", id);
+
+	/* #3: Receive operation with mode and user info */
 	if(receive_operation_from_2(acceptfd, &op) < 0)
 		return -1;
 
 	sscanf(op.text, "%ms %ms", &(client_ui.username), &(client_ui.passwd));
 	free(op.text);
 
+	/* Switch to registration, login or uncorrect mode */
 	if(op.uid == UID_ANON && op.code == OP_REG)
 		return registration();
 	else if(op.uid == UID_ANON && op.code == OP_LOG)
@@ -77,8 +74,56 @@ int login_registration(){
 	else{
 		send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED,
 			"Incorrect first operation_t. Expected OP_LOG or OP_REG");
-		return (-1);
+		return -1;
 	}
+}
+
+int login(){
+
+	/* #1: wait(UW, 1) */
+	short_semop(UW, -1);
+
+	/* #2: wait(UR, 1) */
+	short_semop(UR, -1);
+
+	/* #3: signal(UW, 1) */
+	short_semop(UW, 1);
+
+	/* #4: search for username and fill user info */
+	read_ui = find_user_by_username(client_ui.username);
+
+	/* #5: Signal (UR, 1) */
+	short_semop(UR, 1);
+
+	/* Check if username found */
+	if(read_ui == NULL){
+	/* #6a: Send operation NOT ACCEPTED */
+		send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Username not found");
+		return -1;
+	}
+
+	/* #6: Decrypt and compare password */
+	char *double_encrypted_passwd = caesar_cipher_2(client_ui.passwd, amount, increment);
+
+	/* Check if passwords match */
+	if(strcmp(double_encrypted_passwd, read_ui->passwd) != 0){
+		/* If passwords are different, then
+			#7a: Send operation NOT ACCEPTED * */
+		send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Passwords don't match");
+		return -1;
+	}
+	free(double_encrypted_passwd);
+
+	// Save UID in client_ui
+	client_ui.uid = read_ui->uid;
+
+	/* #7: Send operation OK with stored UID */
+	char uid_str[6];
+	sprintf(uid_str, "%d", read_ui->uid);
+	if(send_operation_to(acceptfd, UID_SERVER, OP_OK, uid_str) < 0)
+		return -1;
+
+	return 0;
 }
 
 int registration(){
@@ -94,17 +139,16 @@ int registration(){
 
 	/* Check if username found */
 	if(read_ui != NULL){
-
-		/* #4a: signal(UR, MAX_THREAD) */
+		/* If username already found, then
+			#4a: signal(UR, MAX_THREAD) */
 		short_semop(UR, MAX_THREAD);
 
 		/* #5a: signal(UW, 1) */
 		short_semop(UW, 1);
 
-		/* #6a Send OP_NOT_ACCEPTED */
+		/* #6a: Send operation NOT ACCEPTED */
 		send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Username already existing.");
 
-		// #9a
 		return -1;
 	}
 	
@@ -135,10 +179,6 @@ int registration(){
 	/* New UID to assign is the last UID + 1 */
 	client_ui.uid = last_uid + 1;
 
-	#ifdef PRINT_DEBUG_FINE
-		printf("last_uid=%d, client_ui.uid=%d\n", last_uid, client_ui.uid);
-	#endif
-
 	/* #5: Append on files */
 	fseek(users_file, 0, SEEK_END);
 	char *double_encrypted_passwd = caesar_cipher_2(client_ui.passwd, amount, increment);
@@ -152,7 +192,7 @@ int registration(){
 	/* #7: signal(UW, 1) */
 	short_semop(UW, 1);
 
-	/* #8: Send OP_OK with UID */
+	/* #8: Send operation OK with UID */
 	char uid_str[6];
 	sprintf(uid_str, "%d", client_ui.uid);
 	if(send_operation_to(acceptfd, UID_SERVER, OP_OK, uid_str) < 0)
@@ -163,47 +203,3 @@ int registration(){
 	return 0;
 }
 
-int login(){
-
-	/* #1: wait(UW, 1) */
-	short_semop(UW, -1);
-
-	/* #2: wait(UR, 1) */
-	short_semop(UR, -1);
-
-	/* #3: signal(UW, 1) */
-	short_semop(UW, 1);
-
-	/* #4: search for username and fill user info */
-	read_ui = find_user_by_username(client_ui.username);
-
-	/* #5: Signal (UR, 1) */
-	short_semop(UR, 1);
-
-	/* Check if username found */
-	if(read_ui == NULL){
-	/* #6a: send OP_NOT_ACCEPTED */
-		send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Username not found");
-		return -1;
-	}
-
-	/* #6: Decrypt and compare password */
-	char *double_encrypted_passwd = caesar_cipher_2(client_ui.passwd, amount, increment);
-	if(strcmp(double_encrypted_passwd, read_ui->passwd) != 0){	/* Passwords are different */
-		/* 6a: Send OP_NOT_ACCEPTED */
-		send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Passwords don't match");
-		return -1;
-	}
-	free(double_encrypted_passwd);
-
-	// Save UID in client_ui
-	client_ui.uid = read_ui->uid;
-
-	/* #7: Send OP_OK with stored UID */
-	char uid_str[6];
-	sprintf(uid_str, "%d", read_ui->uid);
-	if(send_operation_to(acceptfd, UID_SERVER, OP_OK, uid_str) < 0)
-		return -1;
-
-	return 0;
-}
