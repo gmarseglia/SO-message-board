@@ -312,7 +312,7 @@ int delete_message(){
 
 	char before_found = 0, after_found = 0, empty_found = 0;
 	uint64_t before_position, after_position, empty_position;
-	uint64_t before_offset, after_offset, empty_offset;
+	uint64_t before_offset;
 	uint32_t before_len, after_len;
 
 	/* write_offset and write_len are used in the next fwrite
@@ -350,7 +350,6 @@ int delete_message(){
 		/* Check if the free are starts when message ends */
 		if(after_found == 0 && message_offset + message_len == read_offset){
 			/* Save the offset and the len of the free area found */
-			after_offset = read_offset;
 			after_len = read_len;
 			after_position = read_bytes;
 			after_found = 1;
@@ -360,20 +359,11 @@ int delete_message(){
 		/* Check if the free area is already deleted */
 		if(read_offset == DELETED_OFFSET){
 			/* Save the offset and the len of the free area found */
-			empty_offset = read_offset;
 			empty_position = read_bytes;
 			empty_found = 1;
 			continue;
 		}
 	}
-
-	/*
-	printf(
-		"before_found=%d, before_position=%ld before_offset=%ld, before_len=%d\nafter_found=%d, after_position=%ld, after_offset=%ld, after_len=%d\n empty_found=%d, empty_position=%ld, empty_offset=%ld\n",
-		before_found, before_position, before_offset, before_len,
-		after_found, after_position, after_offset, after_len,
-		empty_found, empty_position, empty_offset);
-	/*
 
 	/* No adjacent free areas found */
 	if(before_found == 0 && after_found == 0){
