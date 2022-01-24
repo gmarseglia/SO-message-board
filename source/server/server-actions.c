@@ -279,7 +279,7 @@ int delete_message(){
 	/* #2: Check target MID in bound */
 	fseek(index_file, 0, SEEK_END);
 	/* Compute number of lines = max MID */
-	if(target_mid >= ftell(index_file) / INDEX_LINE_LEN){
+	if(target_mid >= ftell(index_file) / INDEX_LINE_LEN || target_mid < 0){
 		/* #2a: Send OP_NOT_ACCEPTED */
 		return close_delete(
 			send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Post doesn't exist."), 
