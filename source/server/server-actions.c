@@ -6,6 +6,7 @@ const uint64_t DELETED_OFFSET = 0xffffffffffffffff;
 extern __thread int acceptfd;
 extern __thread user_info_t client_ui;
 extern __thread operation_t op;
+extern __thread int id;
 
 __thread FILE *messages_file, *index_file,*free_areas_file;
 
@@ -44,7 +45,7 @@ int post_message(){
 		return -1;
 	}
 
-	printf("(%s, %d): message sent.\n",	client_ui.username, client_ui.uid);
+	printf("Thread[%d]: received message from (%s, %d).\n",	id, client_ui.username, client_ui.uid);
 
 	/* #1: Extract Subject and Body from OP text */
 	sscanf(op.text, "%m[^\n]", &subject);
@@ -88,8 +89,8 @@ int post_message(){
 	#endif
 
 	/* #6: Search for free memory area in "Free file" using first fit */
-	uint64_t read_offset;
-	uint32_t read_len;
+	uint64_t read_offset,write_offset;
+	uint32_t read_len, write_len;
 	size_t free_areas_file_len, read_bytes = 0;
 
 	/* The default offset at which the message will be saved 
@@ -103,7 +104,7 @@ int post_message(){
 	fseek(free_areas_file, 0, SEEK_SET);
 
 	/* Cycle through the file which contains the free areas offsets */
-	for(read_bytes = 0; read_bytes < free_areas_file_len; ){
+	for(read_bytes = 0; read_bytes < free_areas_file_len; read_bytes += FREE_AREAS_LINE_LEN){
 		/* Read the offset of the free area */
 		fread(&read_offset, 1, sizeof(uint64_t), free_areas_file);
 		/* Read the length in bytes of the free area */
@@ -116,16 +117,25 @@ int post_message(){
 			/* #7a: Update "free areas file" */
 			fseek(free_areas_file, read_bytes, SEEK_SET);
 
-			/* New offset is the end of the message */
-			read_offset = read_offset + message_len;
-			/* New length is reduced by the bytes used by the message*/
-			read_len = read_len - message_len;	
-			fwrite(&read_offset, 1, sizeof(uint64_t), free_areas_file);
-			fwrite(&read_len, 1, sizeof(uint32_t), free_areas_file);
+			/* If the free area is empty, then mark as deleted */ 
+			if(read_len == message_len){
+				write_offset = DELETED_OFFSET;
+				write_len = 0;
+			}
+			/* If the free are has still space, then update */
+			else {
+				/* New offset is the end of the message */
+				write_offset = read_offset + message_len;
+				/* New offset is the end of the message */
+				write_len = read_len - message_len;
+			}
+
+			/* Write on file */
+			fwrite(&write_offset, 1, sizeof(uint64_t), free_areas_file);
+			fwrite(&write_len, 1, sizeof(uint32_t), free_areas_file);
+
 			break;
 		}
-
-		read_bytes += FREE_AREAS_LINE_LEN;	/* For cycle increment */
 	}
 
 	/* #7: Write on "Index file" at MID line:
@@ -395,6 +405,8 @@ int delete_message(){
 		/* Delete the free area after */
 		fseek(free_areas_file, after_position, SEEK_SET);
 		fwrite(&DELETED_OFFSET, 1, sizeof(uint64_t), free_areas_file);
+		int empty_free_area_len = 0;
+		fwrite(&empty_free_area_len, 1, sizeof(uint32_t), free_areas_file);
 
 		write_offset = before_offset;
 		write_len = before_len + message_len + after_len;
