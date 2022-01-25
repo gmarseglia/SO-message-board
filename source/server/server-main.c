@@ -43,9 +43,14 @@ int main(int argc, char const *argv[]){
 	bitmask_fill(&bm_free_threads);	/* Set all bit to 1, all threads are free */
 
 	/* Initialize signal sets */
-	sigfillset(&set_all_blocked);
+	// sigfillset(&set_all_blocked);
+	sigemptyset(&set_all_blocked);
+	sigaddset(&set_all_blocked, SIGUSR1);
+	sigaddset(&set_all_blocked, SIGINT);
+
 	sigemptyset(&set_sigint_allowed);
 	sigaddset(&set_sigint_allowed, SIGUSR1);
+	
 	sigemptyset(&set_sigusr1_allowed);
 	sigaddset(&set_sigusr1_allowed, SIGINT);
 

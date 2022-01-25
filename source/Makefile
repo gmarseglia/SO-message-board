@@ -48,4 +48,4 @@ subl-client:
 
 run: all
 	@clear
-	cd $(run-dir); x-terminal-emulator -e './xserver && echo -e "\nPress any to exit..." && read' && x-terminal-emulator
+	cd $(run-dir); x-terminal-emulator -T "xserver" -e './xserver && echo -e "\nPress any to exit..." && read' && x-terminal-emulator -T "xclient"
