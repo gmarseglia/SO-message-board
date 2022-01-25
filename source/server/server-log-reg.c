@@ -185,6 +185,7 @@ int registration(){
 	char *double_encrypted_passwd = caesar_cipher_2(client_ui.passwd, amount, increment);
 	fprintf(users_file, "%d %s %s\n", client_ui.uid, client_ui.username, double_encrypted_passwd);
 	free(double_encrypted_passwd);
+	fsync(fileno(users_file));
 	fclose(users_file);	/* It's important to close, to save changes on files */
 
 	/* #6: signal(UR, MAX_THREAD) */

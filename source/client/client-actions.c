@@ -41,6 +41,8 @@ int post_message(){
 		free(body);
 	}
 
+	printf("Sending post request.\n");
+
 	/* Pre-send block */
 	pthread_sigmask(SIG_SETMASK, &sigset_all_blocked, NULL);
 
@@ -57,6 +59,8 @@ int post_message(){
 
 	/* After-send unlock */
 	pthread_sigmask(SIG_SETMASK, &sigset_sigint_allowed, NULL);
+
+	printf("Waiting for server response...\n");
 
 	/* #4: Receive response */
 	if(receive_operation_from_2(sockfd, &op) < 0)
@@ -92,6 +96,8 @@ int read_all_messages(){
 	char *read_username, *subject, *body;
 	size_t before_body_len;
 	operation_t op;
+
+	printf("Sending read request.\n");
 
 	/* Pre-send block */
 	pthread_sigmask(SIG_SETMASK, &sigset_all_blocked, NULL);
@@ -163,7 +169,7 @@ int delete_message(){
 
 	sprintf(target_mid_str, "%d", target_mid);
 
-	printf("Asking server to delete post #%d\n", target_mid);
+	printf("Sending delete request for post #%d.\n", target_mid);
 
 	/* Pre-send block */
 	pthread_sigmask(SIG_SETMASK, &sigset_all_blocked, NULL);
@@ -174,6 +180,8 @@ int delete_message(){
 
 	/* After-send unlock */
 	pthread_sigmask(SIG_SETMASK, &sigset_sigint_allowed, NULL);
+
+	printf("Waiting for server response...\n");
 
 	/* #3: Receive response */
 	if(receive_operation_from_2(sockfd, &op) < 0)
