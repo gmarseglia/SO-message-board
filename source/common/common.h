@@ -25,6 +25,12 @@
 #ifndef COMMON_H_INCLUDED	/* Double-inclusion guard*/
 	#define COMMON_H_INCLUDED
 
+	#ifdef PRINT_DEBUG_FINE
+		#ifndef PRINT_DEBUG
+			#define PRINT_DEBUG
+		#endif
+	#endif
+
 	/* Macros */
 	#define fflush(stdin) while(getchar() != '\n');
 	#define exit_failure() exit(EXIT_FAILURE);

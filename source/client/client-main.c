@@ -60,7 +60,8 @@ int main(int argc, const char *argv[]){
 
 		/* #1: Connect to server */
 		if(connect(sockfd, (struct sockaddr *)&addr, sizeof(struct sockaddr)) < 0){
-			if(errno != ECONNREFUSED) perror_and_failure("connect()", __func__);
+			if(errno != ECONNREFUSED && errno != ETIMEDOUT)
+				perror_and_failure("connect()", __func__);
 			printf("Could not connect to server. Quitting.\n");
 			exit(0);
 		} 

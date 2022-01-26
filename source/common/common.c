@@ -25,7 +25,10 @@ int send_operation_to(int sockfd, int uid, char code, char *text){
 	/* Send UID, code and length of the text */
 	/* writev() allows to send atomically multiple buffers */
 	if((byte_written = writev(sockfd, iov, 3)) < 0){ 
-		if(errno != EINTR)	perror("Error in send_operation_to on writev");
+		#ifdef PRINT_DEBUG
+			if(errno != EINTR)	perror("Error in send_operation_to on writev");
+		#endif
+
 		return -1;
 	}
 
@@ -38,11 +41,14 @@ int send_operation_to(int sockfd, int uid, char code, char *text){
 
 	/* Send text */
 	if((byte_written = write(sockfd, text, send_text_len)) != send_text_len){
-		if(errno != EINTR) perror("Error in send_operation_to on write");
+		#ifdef PRINT_DEBUG
+			if(errno != EINTR) perror("Error in send_operation_to on write");
+		#endif
+
 		return -1;
 	}
 
-	#ifdef PRINT_DEBUG_FINE
+	#ifdef PRINT_DEBUG_MESSAGE
 		printf("write has written %d bytes=%s\n", byte_written, text);
 	#endif
 
@@ -73,7 +79,10 @@ int receive_operation_from(int sockfd, int *uid, char *code, char **text){
 
 	/* Read UID, code and length of the text */
 	if((byte_read = readv(sockfd, iov, 3)) <= 0){
-		if(byte_read < 0 && errno != EINTR) perror("Error in receive_operation_from on readv");
+		#ifdef PRINT_DEBUG
+			if(byte_read < 0 && errno != EINTR) perror("Error in receive_operation_from on readv");
+		#endif
+
 		return -1;
 	}
 
@@ -99,7 +108,10 @@ int receive_operation_from(int sockfd, int *uid, char *code, char **text){
 
 	/* Read the text, save in pre-allocated buffer */
 	if((byte_read = read(sockfd, *text, read_text_len)) <= 0){
-		if(byte_read < 0 && errno != EINTR) perror("Error in receive_operation_from on readv");
+		#ifdef PRINT_DEBUG
+			if(byte_read < 0 && errno != EINTR) perror("Error in receive_operation_from on readv");
+		#endif
+			
 		return -1;
 	}
 

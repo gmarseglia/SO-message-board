@@ -41,9 +41,15 @@ int login();
 
 int login_registration(){
 
+	/* Pre-receive unlock */
+	pthread_sigmask(SIG_SETMASK, &set_sigusr1_allowed, NULL);
+
 	/* #1: Receive operation to start handshake */
 	if(receive_operation_from_2(acceptfd, &op) < 0)
 		return -1;
+
+	/* After receive lock */
+	pthread_sigmask(SIG_SETMASK, &set_all_blocked, NULL);
 
 	/* Op (UID_ANON, OP_OK, *) is required */
 	if(op.code != OP_OK || op.uid != UID_ANON){
@@ -60,9 +66,15 @@ int login_registration(){
 	
 	printf("Thread[%d]: Handshake complete.\n", id);
 
+	/* Pre-receive unlock */
+	pthread_sigmask(SIG_SETMASK, &set_sigusr1_allowed, NULL);
+
 	/* #3: Receive operation with mode and user info */
 	if(receive_operation_from_2(acceptfd, &op) < 0)
 		return -1;
+
+	/* After receive lock */
+	pthread_sigmask(SIG_SETMASK, &set_all_blocked, NULL);
 
 	sscanf(op.text, "%ms %ms", &(client_ui.username), &(client_ui.passwd));
 	free(op.text);

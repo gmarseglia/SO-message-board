@@ -142,6 +142,10 @@ void main_cycle(){
 
 void signal_handler(int signum){
 	if(signum == SIGINT){
+
+		/* Close connection socket */
+		if(close(sockfd) < 0) perror("Error in sigint_handler on close\n");
+
 		printf("\nSIGINT catched.\nSending SIGUSR1 to threads.\n");
 
 		/* Send SIGUSR1 to all threads */
@@ -164,9 +168,6 @@ void signal_handler(int signum){
 		semctl(MR, 0, IPC_RMID);
 		semctl(MW, 0, IPC_RMID);
 		semctl(sem_free_threads, 0, IPC_RMID);
-
-		/* Close connection socket */
-		if(close(sockfd) < 0) perror("Error in sigint_handler on close\n");
 
 		printf("Server terminated.\n\n");
 
