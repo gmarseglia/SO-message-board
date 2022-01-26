@@ -207,7 +207,7 @@ int read_all_messages(){
 			continue;
 
 		/* #5.2: Read from "Messages file" at message_offset: (subject, '\n', body) */
-		message_read = calloc(sizeof(char), message_len); /* Allocate space */
+		message_read = calloc(sizeof(char), message_len + 1); /* Allocate space */
 
 		/* If calloc failed, then action ends not correctly */
 		if(message_read == NULL){

@@ -61,7 +61,7 @@
 		char *text;
 	} operation_t;
 
-	#define SEP "--------------------------------"
+	#define SEP "-----------------------------------"
 
 	/* Functions prototypes */
 

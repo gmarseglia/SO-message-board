@@ -41,10 +41,10 @@ subl-all: subl-server subl-client
 	subl Makefile
 
 subl-server:
-	subl $(server-headers) $(server-sources)
+	subl -n $(server-headers) $(server-sources)
 
 subl-client:
-	subl $(client-headers) $(client-sources)
+	subl -n $(client-headers) $(client-sources)
 
 run: all
 	@clear
