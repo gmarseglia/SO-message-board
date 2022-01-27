@@ -44,7 +44,7 @@ int post_message(){
 	printf("Sending post request.\n");
 
 	/* Pre-send block */
-	pthread_sigmask(SIG_SETMASK, &sigset_all_blocked, NULL);
+	pthread_sigmask(SIG_BLOCK, &set_sigint, NULL);
 
 	#ifdef PRINT_DEBUG_FINE
 	printf("BEGIN%s\n%s(%d) is sending:\n%s\n%s\n%s\n%s\n%sEND\n", SEP, client_ui.username, client_ui.uid, SEP,
@@ -58,7 +58,7 @@ int post_message(){
 	}
 
 	/* After-send unlock */
-	pthread_sigmask(SIG_SETMASK, &sigset_sigint_allowed, NULL);
+	pthread_sigmask(SIG_UNBLOCK, &set_sigint, NULL);
 
 	printf("Waiting for server response...\n");
 
@@ -104,14 +104,14 @@ int read_all_messages(){
 	printf("Sending read request.\n");
 
 	/* Pre-send block */
-	pthread_sigmask(SIG_SETMASK, &sigset_all_blocked, NULL);
+	pthread_sigmask(SIG_BLOCK, &set_sigint, NULL);
 
 	/* #1: Send operation with the read all request */
 	if(send_operation_to(sockfd, client_ui.uid, OP_READ_REQUEST, NULL) < 0)
 		return -1;
 
 	/* After-send unlock */
-	pthread_sigmask(SIG_SETMASK, &sigset_sigint_allowed, NULL);
+	pthread_sigmask(SIG_UNBLOCK, &set_sigint, NULL);
 
 	/* #2: Read message response * until OK, and print messages 
 		Server will send OP_READ_RESPONSE with messages,
@@ -192,14 +192,14 @@ int delete_message(){
 	printf("Sending delete request for post #%d.\n", target_mid);
 
 	/* Pre-send block */
-	pthread_sigmask(SIG_SETMASK, &sigset_all_blocked, NULL);
+	pthread_sigmask(SIG_BLOCK, &set_sigint, NULL);
 
 	/* #2: Send operation with delete request */
 	if(send_operation_to(sockfd, client_ui.uid, OP_DELETE_REQUEST, target_mid_str) < 0)
 		return -1;
 
 	/* After-send unlock */
-	pthread_sigmask(SIG_SETMASK, &sigset_sigint_allowed, NULL);
+	pthread_sigmask(SIG_UNBLOCK, &set_sigint, NULL);
 
 	printf("Waiting for server response...\n");
 
