@@ -43,24 +43,23 @@ int main(int argc, char const *argv[]){
 	bitmask_fill(&bm_free_threads);	/* Set all bit to 1, all threads are free */
 
 	/* Initialize signal sets */
-	// sigfillset(&set_all_blocked);
-	sigemptyset(&set_all_blocked);
-	sigaddset(&set_all_blocked, SIGUSR1);
-	sigaddset(&set_all_blocked, SIGINT);
-
-	sigemptyset(&set_sigint_allowed);
-	sigaddset(&set_sigint_allowed, SIGUSR1);
+	sigemptyset(&set_sigint);
+	sigaddset(&set_sigint, SIGINT);
 	
-	sigemptyset(&set_sigusr1_allowed);
-	sigaddset(&set_sigusr1_allowed, SIGINT);
+	sigemptyset(&set_sigusr1);
+	sigaddset(&set_sigusr1, SIGUSR1);
+
+	sigemptyset(&set_both);
+	sigaddset(&set_both, SIGINT);
+	sigaddset(&set_both, SIGUSR1);
 
 	/* Set signal handler */
-	struct sigaction actual_sigaction = {.sa_handler = signal_handler, .sa_mask = set_all_blocked};
+	struct sigaction actual_sigaction = {.sa_handler = signal_handler, .sa_mask = set_both};
 	sigaction(SIGINT, &actual_sigaction, NULL);
 	sigaction(SIGUSR1, &actual_sigaction, NULL);
 
 	/* Block signals */
-	pthread_sigmask(SIG_SETMASK, &set_all_blocked, NULL);
+	pthread_sigmask(SIG_BLOCK, &set_both, NULL);
 
 	/* Create the socket for connection, use TCP	*/
 	if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) perror_and_failure("on socket creation attempt", __func__);
@@ -112,7 +111,7 @@ void main_cycle(){
 		if(arg == NULL) perror_and_failure("thread_arg malloc()", __func__);
 
 		/* Allow SIGINT */
-		pthread_sigmask(SIG_SETMASK, &set_sigint_allowed, NULL);
+		pthread_sigmask(SIG_UNBLOCK, &set_sigint, NULL);
 
 		/* Wait for a free thread, BLOCKING */
 		short_semop(sem_free_threads, -1);
@@ -125,8 +124,8 @@ void main_cycle(){
 		arg->acceptfd = accept(sockfd, (struct sockaddr *)client_addr, &client_addr_len);
 		if(arg->acceptfd < 0) perror_and_failure("accept", __func__);
 
-		/* Block signals */
-		pthread_sigmask(SIG_SETMASK, &set_all_blocked, NULL);
+		/* Block SIGINT */
+		pthread_sigmask(SIG_BLOCK, &set_sigint, NULL);
 
 		/* Set thread as busy */
 		bitmask_del(&bm_free_threads, free_thread);

@@ -50,7 +50,7 @@
 	bitmask_t bm_free_threads;	/* 1 -> thread is free, 0 -> thread is busy */
 
 	/* Signal set */
-	sigset_t set_all_blocked, set_sigint_allowed, set_sigusr1_allowed;
+	sigset_t set_sigint, set_sigusr1, set_both;
 
 	/*
 	**	DESCRIPTION

@@ -8,7 +8,7 @@ __thread int id;
 
 void *thread_communication_routine(void *arg){
 	// Block signals
-	pthread_sigmask(SIG_SETMASK, &set_all_blocked, NULL);
+	pthread_sigmask(SIG_BLOCK, &set_both, NULL);
 
 	// Initialize local variables and free argument struct
 	struct thread_arg *t_arg = (struct thread_arg *)arg;
@@ -40,14 +40,14 @@ void *thread_communication_routine(void *arg){
 
 int dispatcher(){
 	// Allow SIGUSR1
-	pthread_sigmask(SIG_SETMASK, &set_sigusr1_allowed, NULL);
+	pthread_sigmask(SIG_UNBLOCK, &set_sigusr1, NULL);
 
 	// Receive first operation_t
 	if(receive_operation_from_2(acceptfd, &op) < 0)
 		return -1;
 
-	// Block signals
-	pthread_sigmask(SIG_SETMASK, &set_all_blocked, NULL);
+	// Block SIGUSR1
+	pthread_sigmask(SIG_BLOCK, &set_sigusr1, NULL);
 
 	#ifdef PRINT_DEBUG_FINE
 	printf("BEGIN%s\n(%s, %d) sent \'%c\' op:\n%s\n%sEND\n\n",

@@ -16,20 +16,10 @@ operation_t op;
 char action_code;
 char *action_name;
 
-/*
-	// Block all signals
-	pthread_sigmask(SIG_BLOCK, &sigset_all_blocked, &sigset_sigint_allowed);
-	// or
-	pthread_sigmask(SIG_SETMASK, &sigset_all_blocked, NULL);
-
-	// Allow SIGINT
-	pthread_sigmask(SIG_SETMASK, &sigset_sigint_allowed, NULL);
-*/
-
 int login_registration(){
 
 	/* Block signals while sending operation */
-	pthread_sigmask(SIG_SETMASK, &sigset_all_blocked, NULL);
+	pthread_sigmask(SIG_BLOCK, &set_sigint, NULL);
 
 	/* #1: Send operation to start handshake
 		Send OP_OK to start handshake */
@@ -37,7 +27,7 @@ int login_registration(){
 		return -1;
 
 	/* Unlock signals after send */
-	pthread_sigmask(SIG_SETMASK, &sigset_sigint_allowed, NULL);
+	pthread_sigmask(SIG_UNBLOCK, &set_sigint, NULL);
 
 	printf("Waiting in queue for free server slot...\n");
 
@@ -75,17 +65,18 @@ int login_registration(){
 	op.code = (action_code == ACTION_LOGIN) ? OP_LOG : OP_REG;
 
 	/* Pre-send block */
-	pthread_sigmask(SIG_SETMASK, &sigset_all_blocked, NULL);
+	pthread_sigmask(SIG_BLOCK, &set_sigint, NULL);
 
 	/* #5: Send operation with user info
 		(UID_ANON, OP_LOG | OP_REG, "username passwd") */
 	if(send_operation_to_2(sockfd, op) < 0)
 		return -1;
+
 	free(op.text);
 
 	/* After-send unlock */
-	pthread_sigmask(SIG_SETMASK, &sigset_sigint_allowed, NULL);
-
+	pthread_sigmask(SIG_UNBLOCK, &set_sigint, NULL);
+	
 	printf("Waiting for server response...\n");
 
 	/* #6: Receive response */

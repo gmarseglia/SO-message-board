@@ -43,11 +43,11 @@ int main(int argc, const char *argv[]){
 		inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 
 	/* Signal handling */
-	sigfillset(&sigset_all_blocked);
-	pthread_sigmask(SIG_SETMASK, NULL, &sigset_sigint_allowed);
+	sigemptyset(&set_sigint);
+	sigaddset(&set_sigint, SIGINT);
 
 	/* The handler is very simple, needs only to close socket and exit */
-	struct sigaction actual_sigaction = {.sa_handler = close_connenction_and_exit, .sa_mask = sigset_all_blocked};
+	struct sigaction actual_sigaction = {.sa_handler = close_connenction_and_exit, .sa_mask = set_sigint};
 	sigaction(SIGINT, &actual_sigaction, NULL);
 
 	/* Client needs to register or login before being able to send message */
