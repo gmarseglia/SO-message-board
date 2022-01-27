@@ -25,31 +25,28 @@ int send_operation_to(int sockfd, int uid, char code, char *text){
 	/* Send UID, code and length of the text */
 	/* writev() allows to send atomically multiple buffers */
 	if((byte_written = writev(sockfd, iov, 3)) < 0){ 
-		#ifdef PRINT_DEBUG
-			if(errno != EINTR)	perror("Error in send_operation_to on writev");
-		#endif
+		if(errno != EINTR)	perror("Error in send_operation_to on writev");
 
 		return -1;
 	}
 
 	#ifdef PRINT_DEBUG_MESSAGE
-		printf("writev has written %d bytes\n", byte_written);
+		printf("writev has written %ld bytes\n", byte_written);
 	#endif
 
 	/* If messagge == NULL, don't send second part */
 	if(text == NULL) return 0;
 
 	/* Send text */
-	if((byte_written = write(sockfd, text, send_text_len)) != send_text_len){
-		#ifdef PRINT_DEBUG
-			if(errno != EINTR) perror("Error in send_operation_to on write");
-		#endif
+	if((byte_written = send(sockfd, text, send_text_len, MSG_NOSIGNAL)) != send_text_len){
+		if(errno != EINTR && errno != EPIPE)
+			perror("Error in send_operation_to on write");
 
 		return -1;
 	}
 
 	#ifdef PRINT_DEBUG_MESSAGE
-		printf("write has written %d bytes=%s\n", byte_written, text);
+		printf("write has written %ld bytes=%s\n", byte_written, text);
 	#endif
 
 	return 0;
@@ -79,9 +76,7 @@ int receive_operation_from(int sockfd, int *uid, char *code, char **text){
 
 	/* Read UID, code and length of the text */
 	if((byte_read = readv(sockfd, iov, 3)) <= 0){
-		#ifdef PRINT_DEBUG
-			if(byte_read < 0 && errno != EINTR) perror("Error in receive_operation_from on readv");
-		#endif
+		if(byte_read < 0 && errno != EINTR) perror("Error in receive_operation_from on readv");
 
 		return -1;
 	}
@@ -91,7 +86,7 @@ int receive_operation_from(int sockfd, int *uid, char *code, char **text){
 	if(code != NULL) *code = read_code;
 
 	#ifdef PRINT_DEBUG_MESSAGE
-		printf("readv has read %d bytes, read_text_len=%d\n", byte_read, read_text_len);
+		printf("readv has read %ld bytes, read_text_len=%d\n", byte_read, read_text_len);
 	#endif
 
 	/* 
@@ -108,15 +103,13 @@ int receive_operation_from(int sockfd, int *uid, char *code, char **text){
 
 	/* Read the text, save in pre-allocated buffer */
 	if((byte_read = read(sockfd, *text, read_text_len)) <= 0){
-		#ifdef PRINT_DEBUG
-			if(byte_read < 0 && errno != EINTR) perror("Error in receive_operation_from on readv");
-		#endif
+		if(byte_read < 0 && errno != EINTR) perror("Error in receive_operation_from on readv");
 			
 		return -1;
 	}
 
 	#ifdef PRINT_DEBUG_MESSAGE
-		printf("read has read %d bytes, message=%s\n", byte_read, *text);
+		printf("read has read %ld bytes, message=%s\n", byte_read, *text);
 	#endif
 
 	return 0;

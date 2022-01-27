@@ -47,8 +47,8 @@ int post_message(){
 	pthread_sigmask(SIG_BLOCK, &set_sigint, NULL);
 
 	#ifdef PRINT_DEBUG_FINE
-	printf("BEGIN%s\n%s(%d) is sending:\n%s\n%s\n%s\n%s\n%sEND\n", SEP, client_ui.username, client_ui.uid, SEP,
-		subject, SEP, body, SEP);
+	printf("BEGIN%s\n%s(%d) is sending:\n%s\n%s\n%sEND\n", SEP, client_ui.username, client_ui.uid, SEP,
+		post_buffer, SEP);
 	#endif
 
 	/* #3: Send operation with message */
