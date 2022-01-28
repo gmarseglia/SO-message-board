@@ -472,7 +472,7 @@ int delete_message(){
 
 	printf("Thread[%d]: deleted post #%d.\n", id, target_mid);
 
-	/* #11: send operation OP OK */
+	/* #10: send operation OP OK */
 	if(send_operation_to(acceptfd, UID_SERVER, OP_OK, NULL) < 0){
 		printf("Thread[%d]: client unreachable.\n", id);
 		return -1;
