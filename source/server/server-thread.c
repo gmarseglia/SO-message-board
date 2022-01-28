@@ -39,14 +39,14 @@ void *thread_communication_routine(void *arg){
 }
 
 int dispatcher(){
-	// Allow SIGUSR1
+	/* #1: Allow SIGUSR1 */
 	pthread_sigmask(SIG_UNBLOCK, &set_sigusr1, NULL);
 
-	// Receive first operation_t
+	/* #2: Receive operation */
 	if(receive_operation_from_2(acceptfd, &op) < 0)
 		return -1;
 
-	// Block SIGUSR1
+	/* #3: Block SIGUSR1 */
 	pthread_sigmask(SIG_BLOCK, &set_sigusr1, NULL);
 
 	#ifdef PRINT_DEBUG_FINE
@@ -55,28 +55,42 @@ int dispatcher(){
 	#endif
 	
 	switch(op.code){
+		/* #4a: Post */
 		case OP_MSG:
 			return post_message();
+
+		/* #4b: Read all */
 		case OP_READ_REQUEST:
 			return read_all_messages();
+
+		/* #4c: Delete */
 		case OP_DELETE_REQUEST:
 			return delete_message();
+
+		/* If request with unkwown code is received, then send operation NOT ACCEPTED */
 		default:
 			printf("BEGIN%s\n(%s, %d) sent \'%c\' op:\n%s\n%sEND\n\n",
 			SEP, client_ui.username, client_ui.uid, op.code, op.text, SEP);
-			return send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Incorrect OP");			
+
+			if(send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Incorrect OP") < 0)
+				return -1;
+
+			return 0;			
 	}
 }
 
 void *thread_close_connection(){
 	printf("Thread[%d]: closed connection.\n", id);
 
-	// Set thread as free
+	/* #N-2: Mark thread as free */
+	/* Mark slot as free on the bitmask */
 	bitmask_add(&bm_free_threads, id);
-
-	// Post on free threads semaphore
+	/* Signal on slots semaphore */
 	short_semop(sem_free_threads, 1);
 
+	/* #N-1: Close socket */
 	if(close(acceptfd) < 0 && errno != EBADF) perror("Error in server on close accepted socket\n");
+	
+	/* Thread exit */
 	return NULL;
 }

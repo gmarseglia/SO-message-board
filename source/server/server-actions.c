@@ -57,7 +57,7 @@ int post_message(){
 	/* #3: wait(MR, MAX_THREAD) */
 	short_semop(MR, -MAX_THREAD);
 
-	/* #4: Open "Messages file", "Index file", "Free areas file" */
+	/* Open "Messages file", "Index file", "Free areas file" */
 	messages_file = FDOPEN_MESSAGES();
 	index_file = FDOPEN_INDEX();
 	free_areas_file = FDOPEN_FREE_AREAS();
@@ -66,7 +66,7 @@ int post_message(){
 	if(messages_file == NULL || index_file == NULL || free_areas_file == NULL)
 		perror_and_failure("FDOPEN", __func__);
 
-	/* #5: Compute MID, Message ID */
+	/* #4: Compute MID */
 	fseek(index_file, 0, SEEK_END);		/* Go to the end of the file */
 	index_file_len = ftell(index_file);	/* Check the number of bytes in the file */
 	/* Compute the number of lines, which is equal to the MID */
@@ -76,7 +76,7 @@ int post_message(){
 		printf("index_file_len = %ld, mid = %d\n", index_file_len, mid);
 	#endif
 
-	/* #6: Search for free memory area in "Free file" using first fit */
+	/* #5: Search for free memory area in "Free file" using first fit */
 	uint64_t read_offset,write_offset;
 	uint32_t read_len, write_len;
 	size_t free_areas_file_len, read_bytes = 0;
@@ -102,7 +102,7 @@ int post_message(){
 		if(read_offset != DELETED_OFFSET && read_len >= message_len){
 			message_offset = read_offset;	/* Update the offset */
 
-			/* #7a: Update "free areas file" */
+			/* #6a: Update "free areas file" */
 			fseek(free_areas_file, read_bytes, SEEK_SET);
 
 			/* If the free area is empty, then mark as deleted */ 
@@ -126,20 +126,22 @@ int post_message(){
 		}
 	}
 
-	/* #7: Write on "Index file" at MID line:
-	** 	(Message offset, Message len, Sender UID) */
+	/* #6: Update "Index file" 
+		Write on "Index file" at MID line:
+ 		(Message offset, Message len, Sender UID) */
 	fwrite(&message_offset, 1, sizeof(uint64_t), index_file);
 	fwrite(&message_len, 1, sizeof(uint32_t), index_file);
 	message_uid = (uint32_t) op.uid;
 	fwrite(&message_uid, 1, sizeof(uint32_t), index_file);
 
-	/* #8: Write on "Message file" at Message offset: (Subject , '\n', Body) */
+	/*  #7: Update "Messages file"
+		Write on "Message file" at Message offset: (Subject , '\n', Body) */
 	fseek(messages_file, message_offset, SEEK_SET);
 	fwrite(subject, 1, strlen(subject), messages_file);
 	fwrite("\n", 1, sizeof(char), messages_file);
 	fwrite(body, 1, strlen(body), messages_file);
 
-	/* #9: Flushes changes and close files
+	/* Flushes changes and close files
 		This is important */
 	for(int i = 0; files[i] != NULL; i++){
 		fsync(fileno(*files[i]));
@@ -147,12 +149,13 @@ int post_message(){
 
 	printf("Thread[%d]: saved a new message.\n", id);
 	
+	/* #8 and #9 */
 	close_post();
 
 	char mid_str[32];
 	sprintf(mid_str, "%d", mid);
 
-	/* #11: Send operation OK
+	/* #10: Send operation OK *
 		(SERVER_UID, OP_OK, MID) */
 	if(send_operation_to(acceptfd, UID_SERVER, OP_OK, mid_str) < 0){
 		printf("Thread[%d]: client unreachable.\n", id);
@@ -199,14 +202,14 @@ int read_all_messages(){
 	/* #5: Cycle through messages */
 	for(mid = 0; mid < max_mid; mid++){
 
-		/* #5.1: Read from "Index file": (message_offset, message_len, message_uid) */
+		/* #5.1: Read from "Index file": Message offset and length, and sender UID */
 		read_mid_from_index(mid);
 
 		/* Skip deleted messages */
 		if(message_offset == DELETED_OFFSET)
 			continue;
 
-		/* #5.2: Read from "Messages file" at message_offset: (subject, '\n', body) */
+		/* #5.2: Read from "Messages file": subject and body */
 		message_read = calloc(sizeof(char), message_len + 1); /* Allocate space */
 
 		/* If calloc failed, then action ends not correctly */
@@ -224,8 +227,9 @@ int read_all_messages(){
 		user_info_t *read_ui = find_user_by_uid(message_uid);
 		username = (read_ui == NULL) ? "Not found" : read_ui->username;
 
-		/* #5.4: Send (SERVER_UID, OP_READ_RESPONSE,
-		**	MID + '\n' + Username + '\n' + Subject + '\n' + Body) */
+		/* #5.4: Send operation with READ RESPONSE code, sender's username subject and body *
+			(SERVER_UID, OP_READ_RESPONSE, 
+			MID + '\n' + Username + '\n' + Subject + '\n' + Body) */
 		text_to_send_len = snprintf(NULL, 0, "%d\n%s\n%s", mid, username, message_read);
 		text_to_send = calloc(sizeof(char), text_to_send_len + 1);	/* Allocate space */
 
@@ -255,9 +259,10 @@ int read_all_messages(){
 
 	printf("Thread[%d]: read request done.\n", id);
 
+	/* #6 */
 	close_read_all();
 
-	/* #6: Send (UID_SERVER, OP_OK, NULL) */
+	/* #7: Send operation OK */
 	if(send_operation_to(acceptfd, UID_SERVER, OP_OK, NULL) < 0){
 		printf("Thread[%d]: client unreachable.\n", id);
 		return -1;
@@ -312,14 +317,14 @@ int delete_message(){
 		return 0;
 	}
 
-	/* #5: Read from "Index file": offset, len and sender UID of message #MID */
+	/* #4: Read from "Index file": offset, len and sender UID of message #MID */
 	read_mid_from_index(target_mid);
 
 	/* Check if UID of sender and of Client match */
 	if(op.uid != message_uid){
 
 		/* If UIDs don't match, then
-			#6a: send operation NOT ACCEPTED
+			#5a: send operation NOT ACCEPTED
 			(UID_SERVER, OP_NOT_ACCETPED, "UID don't match") */
 		close_delete();
 
@@ -337,7 +342,7 @@ int delete_message(){
 	if(message_offset == DELETED_OFFSET){
 
 		/* If the message was already deleted, then
-			#6b: send operation NOT ACCEPTED
+			#5b: send operation NOT ACCEPTED
 			(UID_SERVER, OP_NOT_ACCEPTED, text) */
 		close_delete();
 
@@ -351,11 +356,11 @@ int delete_message(){
 		return 0;
 	}
 
-	/* #6: Write DELETED_OFFSET in "Index file" at message_offset */
+	/* #5: Write DELETED_OFFSET in "Index file" at message_offset */
 	fseek(index_file, target_mid * INDEX_LINE_LEN, SEEK_SET);
 	fwrite(&DELETED_OFFSET, 1, sizeof(uint64_t), index_file);
 
-	/* #7: Look for free areas adjacent to the message */
+	/* #6: Look for free areas adjacent to the message */
 	size_t free_areas_file_len, read_bytes = 0;	/* Used in the for cycle */
 	/* write_* variables are the ones that will be written */
 	uint64_t read_offset, write_offset;
@@ -452,20 +457,22 @@ int delete_message(){
 		fseek(free_areas_file, before_position, SEEK_SET);
 	}
 
-	/* #8: Update "free areas file" */
+	/* #7: Update "free areas file" */
 	fwrite(&write_offset, 1, sizeof(uint64_t), free_areas_file);
 	fwrite(&write_len, 1, sizeof(uint32_t), free_areas_file);
 
-	/* #9: Flush changes and close files */
+	/* Flush changes and close files
+		THIS IS IMPORTANT */
 	for(int i = 0; files[i] != NULL; i++){
 		fsync(fileno(*files[i]));
 	}
 
+	/* #8 and #9 */
 	close_delete();
 
 	printf("Thread[%d]: deleted post #%d.\n", id, target_mid);
 
-	/* #10: send operation OP OK */
+	/* #11: send operation OP OK */
 	if(send_operation_to(acceptfd, UID_SERVER, OP_OK, NULL) < 0){
 		printf("Thread[%d]: client unreachable.\n", id);
 		return -1;
@@ -492,10 +499,10 @@ void close_post(){
 	/* Close files and free buffers */
 	close_files_and_buffers();
 
-	/* #9: signal(MR, MAX_THREAD) */
+	/* #8: signal(MR, MAX_THREAD) */
 	short_semop(MR, MAX_THREAD);
 
-	/* #10: signal(MW, 1) */
+	/* #9: signal(MW, 1) */
 	short_semop(MW, 1);
 }
 
@@ -504,7 +511,7 @@ void close_read_all(){
 	buffers = NULL;
 	close_files_and_buffers();
 
-	/* #N-1: signal(MR, 1) */
+	/* #6: signal(MR, 1) */
 	short_semop(MR, 1);
 }
 
@@ -514,10 +521,10 @@ void close_delete(){
 	buffers = NULL;
 	close_files_and_buffers();
 
-	/* #N-2: signal(MR, MAX_THREAD) */
+	/* #8: signal(MR, MAX_THREAD) */
 	short_semop(MR, MAX_THREAD);
 
-	/* #N-1: signal(MW, 1) */
+	/* #9: signal(MW, 1) */
 	short_semop(MW, 1);
 	
 }
