@@ -13,20 +13,88 @@ pthread_t tids[MAX_THREAD];
 */
 void sigint_handler(int signum);
 
+void display_help();
+
 void main_cycle();
 
 /*
 	Server Main
 */
 int main(int argc, char const *argv[]){
-	int serv_port = INITIAL_SERV_PORT;
+	int serv_port;
+	struct ifaddrs *ifaddr, *ifa;
+    struct sockaddr_in *addr_in;
+    char *interface_name, *interface_address;
 
-	printf("Server active.\n");
+	/* xserver -> start server with default initial port */
+	if(argc == 1){
+		serv_port = INITIAL_SERV_PORT;
+	} 
+	else if (argc == 2){
+		/* xserver initial_port -> start server with user defined initial port */
+		if(sscanf(argv[1], "%d", &serv_port) > 0){
 
-	printf("MAX_THREAD = %d, MAX_BACKLOG = %d\n", MAX_THREAD, MAX_BACKLOG);
+			/* If initial_port is outside range, then warn and exit */
+			if(serv_port < 1024 || serv_port > 65535){
+				printf("initial_port : <%d> is outside permitted range.\n"
+					"Choose a port in range [1024, 65535]\n\n", serv_port);
+				exit(0);
+			}
+		}
 
-	/* Print the ip address in current network	*/
-	system("hostname -I | awk \'{print $1}\'");
+		/* xserver -h || xserver --help -> display help and exit */
+		else if(strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0){
+			display_help();
+			exit(0);
+		}
+
+		/* xserver unknown_parameter -> warn incorrect usage, display help and exit */
+		else {
+			printf("Incorrect usage.\n");
+			display_help();
+			exit(0);
+		}
+
+	}
+
+	printf("Server Parameters:\n"
+		"\t      Initial port : <%d>\n"
+		"\tMax active threads : <%d>\n"
+		"\tConnection backlog : <%d>\n\n",
+		serv_port,
+		MAX_THREAD,
+		MAX_BACKLOG);
+
+	/* Print possible address */
+    /* Call getifaddrs() and check errors */
+    if (getifaddrs(&ifaddr) == -1) 
+        perror_and_failure("getifaddrs()", __func__);
+
+    printf("Possible Addresses:\n");
+
+    /* Run through results */
+    for (ifa = ifaddr; ifa != NULL; ifa = ifa->ifa_next) {
+
+    	/* Continue if NULL address */
+        if (ifa->ifa_addr == NULL)
+            continue;  
+
+        /* Read only interface with AF_INET family */
+        if(ifa->ifa_addr->sa_family == AF_INET){
+        	
+        	/* Read interface name and address from struct */
+        	addr_in = (struct sockaddr_in *)ifa->ifa_addr;
+        	interface_name = ifa->ifa_name;
+        	interface_address = inet_ntoa(addr_in->sin_addr);
+
+        	printf("\tInterface : <%s>\n"
+        		   "\t  Address : <%s>\n\n",
+        		   interface_name, interface_address);
+        }
+        
+    }
+
+    freeifaddrs(ifaddr);
 
 	/* Initialize Users file semaphores */
 	int *SEMAPHORES[] = {&UR, &UW, &MR, &MW, &sem_free_threads, NULL};
@@ -69,26 +137,34 @@ int main(int argc, char const *argv[]){
 	sockaddr_in_setup_inaddr(&addr, INADDR_ANY, serv_port);	// INADDR_ANY = 0.0.0.0, all addresses
 
 	#ifdef PRINT_DEBUG
-		printf("Server trying to bound on %s:%d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
+		printf("Server trying to bound on port : <%d>\n", ntohs(addr.sin_port));
 	#endif
 
 	/* Try to bind starting from INITIAL_SERV_PORT = 6990, and on error "address already in use" try next port */
 	while(bind(sockfd, (struct sockaddr *)&addr, sizeof(addr)) < 0){
-		if(errno != EADDRINUSE) perror_and_failure("on bind attempt", __func__);
+		if(errno != EADDRINUSE)
+			perror_and_failure("on bind attempt", __func__);
 		else {
 			serv_port++;
 			addr.sin_port = htons(serv_port);
 		}
 	}
 
-	printf("Server bound on %s:%d\n", inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
-
 	/* Set the TCP connection socket on LISTEN */
-	if(listen(sockfd, MAX_BACKLOG) < 0) perror_and_failure("listen()", __func__);
+	if(listen(sockfd, MAX_BACKLOG) < 0)
+		perror_and_failure("listen()", __func__);
 
-	#ifdef PRINT_DEBUG
-		printf("Server is on LISTEN\n");
-	#endif
+	char *cwd = getcwd(NULL, 0);
+
+	printf("SERVER ACTIVE:\n"
+		"\t            Bound on port : <%d>\n"
+		"\tCurrent working directory : \n\t\t<%s>\n\n", 
+		ntohs(addr.sin_port),
+		cwd);
+
+	free(cwd);
+
+	printf("Server Log:\n");
 
 	main_cycle();
 
@@ -184,4 +260,12 @@ void signal_handler(int signum){
 	fprintf(stderr, "Unexpected signal %d catched. Quitting.\n", signum);
 	perror_and_failure(__func__, NULL);
 	return;
+}
+
+void display_help(){
+	printf("Usage: xserver initial_port\n"
+		"Start the server in this directory.\n\n"
+		"Options:\n"
+		"\t-h and --help: display this help and exit.\n\n"
+		"initial_port must be in range [1024, 65535]\n");	
 }

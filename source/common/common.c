@@ -119,7 +119,7 @@ int receive_operation_from_2(int sockfd, operation_t *op){
 	return receive_operation_from(sockfd, &(op->uid), &(op->code), &(op->text));
 }
 
-void sockaddr_in_setup_inaddr(struct sockaddr_in *addr, unsigned int ip_address, int port){
+void sockaddr_in_setup_inaddr(struct sockaddr_in *addr, unsigned long ip_address, int port){
 	memset(addr, 0, sizeof(struct sockaddr_in));
 	addr->sin_family = AF_INET;
 	addr->sin_port = htons(port);

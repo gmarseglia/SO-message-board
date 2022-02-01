@@ -22,13 +22,13 @@ void *thread_communication_routine(void *arg){
 	free(client_addr);
 	free(arg);
 
-	printf("Thread[%d]: accepted connection from %s:%d\n", id, str_client_addr, i_client_port);
+	printf("Thread[%d]: accepted connection from <%s:%d>\n", id, str_client_addr, i_client_port);
 
 	// Start the login or registration phase, mandatory for every client
 	if(login_registration(acceptfd, &client_ui) < 0)
 		return thread_close_connection();
 
-	printf("Thread[%d]: (%s, %d) authenticated from %s:%d\n",
+	printf("Thread[%d]: (%s, %d) authenticated from <%s:%d>\n",
 		id, client_ui.username, client_ui.uid, str_client_addr, i_client_port);
 
 	// Main cycle
@@ -50,8 +50,8 @@ int dispatcher(){
 	pthread_sigmask(SIG_BLOCK, &set_sigusr1, NULL);
 
 	#ifdef PRINT_DEBUG_FINE
-	printf("BEGIN%s\n(%s, %d) sent \'%c\' op:\n%s\n%sEND\n\n",
-	SEP, client_ui.username, client_ui.uid, op.code, op.text, SEP);
+		printf("BEGIN%s\n(%s, %d) sent \'%c\' op:\n%s\n%sEND\n\n",
+			SEP, client_ui.username, client_ui.uid, op.code, op.text, SEP);
 	#endif
 	
 	switch(op.code){
@@ -69,7 +69,10 @@ int dispatcher(){
 
 		/* If request with unkwown code is received, then send operation NOT ACCEPTED */
 		default:
-			printf("BEGIN%s\n(%s, %d) sent \'%c\' op:\n%s\n%sEND\n\n",
+			printf("BEGIN%s\n"
+				"(%s, %d) sent \'%c\' op:\n"
+				"%s\n"
+				"%s--END\n\n",
 			SEP, client_ui.username, client_ui.uid, op.code, op.text, SEP);
 
 			if(send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Incorrect OP") < 0)

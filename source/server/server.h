@@ -6,6 +6,7 @@
 	#define SERVER_ROUTINES_H_INCLUDED
 
 	/* Include external headers */
+	#include <ifaddrs.h>
 	#include "../common/common.h"
 	#include "../common/pthread-bitmask.h"
 
@@ -27,8 +28,8 @@
 	/* Constant */
 	#define INITIAL_SERV_PORT (6990)
 	#define INITIAL_UID (1000)
-	#define MAX_BACKLOG (1)
-	#define MAX_THREAD (1)		/* HAS TO BE LESS THAN 32767, "man semctl" */
+	#define MAX_BACKLOG (1024)
+	#define MAX_THREAD (1024)		/* HAS TO BE LESS THAN 32767, "man semctl" */
 	#define INDEX_LINE_LEN (16) // 8 long offset + 4 int message_len + 4 int UID + 1 char '\n'
 	#define FREE_AREAS_LINE_LEN (12) // 8 uint64_t message_offset + 4 uint32_t message_len
 

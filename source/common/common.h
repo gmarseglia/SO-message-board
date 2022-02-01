@@ -107,7 +107,7 @@
 	**	DESCRIPTION
 	**		Initialize struct sockaddr_in
 	*/
-	void sockaddr_in_setup_inaddr(struct sockaddr_in *addr, unsigned int ip_address, int port);
+	void sockaddr_in_setup_inaddr(struct sockaddr_in *addr, unsigned long ip_address, int port);
 	void sockaddr_in_setup(struct sockaddr_in *addr, const char *ip_address, int port);
 
 	/*
