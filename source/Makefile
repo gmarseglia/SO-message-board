@@ -16,13 +16,13 @@ msgf=$(run-dir)index.list $(run-dir)messages.list $(run-dir)free-areas.list
 
 all: init
 	@clear
-	gcc $(server-sources) -o $(run-dir)xserver -pthread -Werror=all -g -DPRINT_DEBUG
-	gcc $(client-sources) -o $(run-dir)xclient -pthread -Werror=all -g -DPRINT_DEBUG -DDEBUG_SERVER
-
-simple: init
-	@clear
 	gcc $(server-sources) -o $(run-dir)xserver -pthread
 	gcc $(client-sources) -o $(run-dir)xclient -pthread
+
+debug: init
+	@clear
+	gcc $(server-sources) -o $(run-dir)xserver -pthread -Werror=all -g -DPRINT_DEBUG
+	gcc $(client-sources) -o $(run-dir)xclient -pthread -Werror=all -g -DPRINT_DEBUG -DDEBUG_SERVER
 
 fine: init
 	@clear

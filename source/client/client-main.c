@@ -10,36 +10,70 @@
 */
 void close_connenction_and_exit(int signum);
 
+void display_help();
+
 /* ----------------------------------------------------------------- */
 
 int main(int argc, const char *argv[]){
-
-	const char *ip_address;
 	int port;
 
-	printf("Client active.\n");
+	/* Setup server address and port */
 
-	#ifdef DEBUG_SERVER		/* Flag used during debugging */
-		/* DEBUG_SERVER 127.0.0.1:6990 */
-		ip_address = "127.0.0.1";
-		port = argc == 1 ? 6990 : strtol(argv[1], NULL, 10);
-	
-	
-	#else	/* Intended use */
-		if(argc != 3){
-			fprintf(stderr, "Incorrect number of arguments.\nCorrect usage is xclient ip_address port_number\n");
-			exit_failure();
+	/* Flag used during debugging
+		DEBUG_SERVER 127.0.0.1:6990 */
+	#ifdef DEBUG_SERVER
+
+		if(argc == 1)
+			port = 6990;
+		else
+		{
+			/* Read port number from argv[1] */
+			if(sscanf(argv[1], "%d", &port) < 0 || port < 0 || port > 65535)
+			{
+				printf("Incorrect port number.\n");
+				exit(EXIT_SUCCESS);
+			}
 		}
 
-		ip_address = argv[1];
-		port = strtol(argv[2], NULL, 10);
+		sockaddr_in_setup(&addr, "127.0.0.1", port);
+
+	/* Intended use */
+	#else
+		unsigned long ip_address;
+
+		/* xclient -h || xclient --help -> display help and exit */
+		if(argc > 1 && (strcmp(argv[1], "-h") == 0 || strcmp(argv[1], "--help") == 0))
+		{
+			display_help();
+			exit(EXIT_SUCCESS);
+		}
+
+		/* xclient server_address server_port -> start server with user defined server address and port */
+		else if(argc == 3 && inet_pton(AF_INET, argv[1], (void *) &ip_address) > 0 &&  sscanf(argv[2], "%d", &port) > 0)
+		{
+			/* If server_port is outside range, then warn and exit */
+			if(port < 0 || port > 65535)
+			{
+				printf("Server_port : <%d> is outside permitted range.\n"
+					"Choose a port in range [0, 65535]\n\n", port);
+				exit(EXIT_SUCCESS);
+			}
+
+		}
+
+		/* xclient unknown_parameters -> warn, display help and exit */
+		else {
+			printf("Incorrect usage.\n");
+			display_help();
+			exit(EXIT_SUCCESS);
+		}
 	
+		/* Setup the struct for server address */
+		sockaddr_in_setup_inaddr(&addr, ip_address, port);
+
 	#endif
 
-	/* Setup the struct for server address */
-	sockaddr_in_setup(&addr, ip_address, port);
-
-	printf("Server address is %s:%d\n\n",
+	printf("Server address : <%s:%d>\n\n",
 		inet_ntoa(addr.sin_addr), ntohs(addr.sin_port));
 
 	/* Signal handling */
@@ -122,4 +156,12 @@ int dispatcher(){
 		default:	
 			return 0;
 	}
+}
+
+
+void display_help(){
+	printf("Usage: xclient server_address server_port\n"
+		"Start client.\n\n"
+		"Options:\n"
+		"\t-h and --help: -h and --help: display this help and exit.\n\n");
 }
