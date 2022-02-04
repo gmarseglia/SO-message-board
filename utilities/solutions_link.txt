@@ -1,3 +1,0 @@
-Solved different port number:
-	https://www.geeksforgeeks.org/explicitly-assigning-port-number-client-socket/
-

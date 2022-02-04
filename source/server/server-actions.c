@@ -304,11 +304,12 @@ int delete_message(){
 	if(target_mid >= ftell(index_file) / INDEX_LINE_LEN || target_mid < 0){
 
 		/* If MID is not in bound, then
-			#4a: Send opertation NOT ACCEPTED */
+			#8 and #9 */
 		close_delete();
 
 		printf("Thread[%d]: delete request failed: target_mid not in buond.\n", id);
 
+		/* #10a: send operation NOT ACCEPTED */
 		if(send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Post doesn't exist.") < 0){
 			printf("Thread[%d]: client unreachable.\n", id);
 			return -1;
@@ -324,12 +325,12 @@ int delete_message(){
 	if(op.uid != message_uid){
 
 		/* If UIDs don't match, then
-			#5a: send operation NOT ACCEPTED
-			(UID_SERVER, OP_NOT_ACCETPED, "UID don't match") */
+			#8 and #9 */
 		close_delete();
 
 		printf("Thread[%d]: delete request failed: UID don't match.\n", id);
 
+		/* #10a: send operation NOT ACCEPTED */
 		if(send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "UID don't match") < 0){
 			printf("Thread[%d]: client unreachable.\n", id);
 			return -1;
@@ -342,12 +343,12 @@ int delete_message(){
 	if(message_offset == DELETED_OFFSET){
 
 		/* If the message was already deleted, then
-			#5b: send operation NOT ACCEPTED
-			(UID_SERVER, OP_NOT_ACCEPTED, text) */
+			#8 and #9 */
 		close_delete();
 
 		printf("Thread[%d]: delete request failed: message already deleted.\n", id);
 
+		/* #10a: send operation NOT ACCEPTED */
 		if(send_operation_to(acceptfd, UID_SERVER, OP_NOT_ACCEPTED, "Message already deleted") < 0){
 			printf("Thread[%d]: client unreachable.\n", id);
 			return -1;
